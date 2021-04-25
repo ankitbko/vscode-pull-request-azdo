@@ -202,6 +202,11 @@ describe('GitHub Pull Requests view', function () {
 
 			const manager = new FolderRepositoryManager(repository, telemetry, new GitApiImpl(), credentialStore, fileReviewedStatusService);
 			const reposManager = new RepositoriesManager([manager], credentialStore, telemetry);
+			sinon.stub(manager, 'createAzdoRepository').callsFake((r, cs) => {
+				assert.deepEqual(r, remote);
+				assert.strictEqual(cs, credentialStore);
+				return azdoRepository;
+			});
 			sinon.stub(credentialStore, 'isAuthenticated').returns(true);
 			await manager.updateRepositories();
 			provider.initialize(reposManager as any);
