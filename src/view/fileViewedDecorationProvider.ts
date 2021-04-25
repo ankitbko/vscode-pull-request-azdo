@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { ViewedState } from '../common/comment';
 import { fromFileChangeNodeUri } from '../common/uri';
+import { URI_SCHEME_RESOURCE } from '../constants';
 
 export class DecorationProvider implements vscode.FileDecorationProvider {
 	private fileViewedState: Map<string, ViewedState> = new Map<string, ViewedState>();
@@ -21,7 +22,7 @@ export class DecorationProvider implements vscode.FileDecorationProvider {
 	}
 
 	provideFileDecoration(uri: vscode.Uri, _token: vscode.CancellationToken): vscode.ProviderResult<vscode.FileDecoration> {
-		if (uri.scheme !== 'filechange' && uri.scheme !== 'github') {
+		if (uri.scheme !== URI_SCHEME_RESOURCE) {
 			return;
 		}
 

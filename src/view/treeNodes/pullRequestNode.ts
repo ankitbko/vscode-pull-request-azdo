@@ -27,7 +27,7 @@ import { GitChangeType, SlimFileChange } from '../../common/file';
 import Logger from '../../common/logger';
 import { fromPRUri, toPRUriAzdo } from '../../common/uri';
 import { uniqBy } from '../../common/utils';
-import { SETTINGS_NAMESPACE, URI_SCHEME_PR } from '../../constants';
+import { SETTINGS_NAMESPACE, URI_SCHEME_PR, URI_SCHEME_RESOURCE } from '../../constants';
 import { getInMemPRContentProvider } from '../inMemPRContentProvider';
 import { DescriptionNode } from './descriptionNode';
 import { DirectoryTreeNode } from './directoryTreeNode';
@@ -593,7 +593,7 @@ export class PRNode extends TreeNode implements CommentHandler, vscode.Commentin
 
 				if (matchingCommentThreads.length === 0) {
 					added.push(thread);
-					if (thread.uri.scheme === 'file') {
+					if (thread.uri.scheme === URI_SCHEME_RESOURCE) {
 						thread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
 					}
 				}
