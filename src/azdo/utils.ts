@@ -14,7 +14,7 @@ import { Identity } from 'azure-devops-node-api/interfaces/IdentitiesInterfaces'
 import * as vscode from 'vscode';
 import { Repository } from '../api/api';
 import { GitApiImpl } from '../api/api1';
-import { Reaction } from '../common/comment';
+import { DiffSide, Reaction } from '../common/comment';
 import { DiffChangeType, DiffHunk, DiffLine } from '../common/diffHunk';
 import { Resource } from '../common/resources';
 import { ThreadData } from '../view/treeNodes/pullRequestNode';
@@ -336,6 +336,22 @@ export function getPositionFromThread(comment: GitPullRequestCommentThread) {
 		: comment.threadContext.rightFileStart.line;
 }
 
+export function getDiffSide(thread: GitPullRequestCommentThread): DiffSide | undefined {
+	if (thread.pullRequestThreadContext?.trackingCriteria !== undefined) {
+		if (
+			thread.pullRequestThreadContext?.trackingCriteria?.origLeftFileStart !== undefined ||
+			thread.threadContext?.leftFileStart !== undefined
+		) {
+			return DiffSide.LEFT;
+		} else if (
+			thread.pullRequestThreadContext?.trackingCriteria?.origRightFileStart !== undefined ||
+			thread.threadContext?.rightFileStart !== undefined
+		) {
+			return DiffSide.RIGHT;
+		}
+	}
+}
+
 export function updateCommentReviewState(thread: GHPRCommentThread, newDraftMode: boolean) {
 	if (newDraftMode) {
 		return;
@@ -387,4 +403,13 @@ export class UserCompletion extends vscode.CompletionItem {
 	login: string;
 	email?: string;
 	uri: vscode.Uri;
+}
+
+export function isCommentResolved(status: CommentThreadStatus): boolean {
+	return (
+		status === CommentThreadStatus.ByDesign ||
+		status === CommentThreadStatus.Closed ||
+		status === CommentThreadStatus.Fixed ||
+		status === CommentThreadStatus.WontFix
+	);
 }
