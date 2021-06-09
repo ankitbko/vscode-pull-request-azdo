@@ -122,7 +122,7 @@ export class FileChangeNode extends TreeNode implements vscode.TreeItem {
 		this.opts = {
 			preserveFocus: true,
 		};
-		this.update(this.comments);
+		this.updateShowOptions();
 		this.resourceUri = toResourceUri(
 			vscode.Uri.file(this.fileName),
 			this.pullRequest.getPullRequestId(),
@@ -137,6 +137,14 @@ export class FileChangeNode extends TreeNode implements vscode.TreeItem {
 				if (matchingChange) {
 					this.updateViewed(matchingChange.viewed);
 					this.refresh(this);
+				}
+			}),
+		);
+
+		this.childrenDisposables.push(
+			this.pullRequest.onDidChangeReviewThreads(e => {
+				if ([...e.added, ...e.removed].some(thread => thread.path === this.fileName)) {
+					this.updateShowOptions();
 				}
 			}),
 		);
@@ -157,66 +165,23 @@ export class FileChangeNode extends TreeNode implements vscode.TreeItem {
 		);
 	}
 
-	private findFirstActiveComment() {
-		let activeComment: GitPullRequestCommentThread | undefined;
-		this.comments.forEach(comment => {
-			if (!activeComment) {
-				activeComment = comment;
-				return;
-			}
+	updateShowOptions() {
+		const reviewThreads = this.pullRequest.reviewThreadsCache;
+		const reviewThreadsForNode = reviewThreads.filter(thread => !thread.isDeleted && thread.path === this.fileName);
 
-			if (!!activeComment && comment.threadContext) {
-				const position = getPositionFromThread(comment) ?? 10000;
-				const active_position = getPositionFromThread(activeComment) ?? 10000;
-				if (position < active_position) {
-					activeComment = comment;
-				}
-			}
-		});
-
-		return activeComment;
-	}
-
-	update(comments: GitPullRequestCommentThread[]) {
-		this.comments = comments;
 		DecorationProvider.updateFileComments(
 			this.resourceUri,
 			this.pullRequest.getPullRequestId(),
 			this.fileName,
-			comments.length > 0,
+			reviewThreadsForNode.length > 0,
 		);
 
-		if (comments && comments.length) {
-			const comment = this.findFirstActiveComment();
-			if (comment) {
-				const diffLine = getDiffLineByPosition(this.diffHunks, getPositionFromThread(comment) ?? 0);
-				if (diffLine) {
-					// If the diff is a deletion, the new line number is invalid so use the old line number. Ensure the line number is positive.
-					const lineNumber = Math.max(
-						getZeroBased(diffLine.type === DiffChangeType.Delete ? diffLine.oldLineNumber : diffLine.newLineNumber),
-						0,
-					);
-					this.opts.selection = new vscode.Range(lineNumber, 0, lineNumber, 0);
-				}
-			}
+		if (reviewThreadsForNode.length) {
+			reviewThreadsForNode.sort((a, b) => a.line - b.line);
+			this.opts.selection = new vscode.Range(reviewThreadsForNode[0].line, 0, reviewThreadsForNode[0].line, 0);
 		} else {
 			delete this.opts.selection;
 		}
-	}
-
-	getCommentPosition(comment: GitPullRequestCommentThread) {
-		const diffLine = getDiffLineByPosition(this.diffHunks, getPositionFromThread(comment) ?? 0);
-
-		if (diffLine) {
-			// If the diff is a deletion, the new line number is invalid so use the old line number. Ensure the line number is positive.
-			const lineNumber = Math.max(
-				getZeroBased(diffLine.type === DiffChangeType.Delete ? diffLine.oldLineNumber : diffLine.newLineNumber),
-				0,
-			);
-			return lineNumber;
-		}
-
-		return 0;
 	}
 
 	getTreeItem(): vscode.TreeItem {
