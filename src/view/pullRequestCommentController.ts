@@ -182,7 +182,8 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 		e.added.forEach(thread => {
 			const fileName = thread.path;
 			const index = this._pendingCommentThreadAdds.findIndex(t => {
-				const samePath = this.gitRelativeRootPath(t.uri.path) === thread.path;
+				// threadId is not yet present in _pendingCommentThreadAdds
+				const samePath = this.gitRelativeRootPath(t.uri.path) === thread.path.replace(/^\/|\/$/g, '');
 				const sameLine = t.range.start.line + 1 === thread.line;
 				return samePath && sameLine;
 			});
@@ -279,6 +280,7 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 	}
 
 	public async createOrReplyComment(thread: GHPRCommentThread, input: string, inDraft?: boolean): Promise<void> {
+		this._pendingCommentThreadAdds.push(thread);
 		await this._commonCommentHandler.createOrReplyComment(
 			thread,
 			input,
