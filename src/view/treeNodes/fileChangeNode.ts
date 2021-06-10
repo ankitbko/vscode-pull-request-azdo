@@ -8,10 +8,9 @@ import { GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/Gi
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../../azdo/folderRepositoryManager';
 import { PullRequestModel } from '../../azdo/pullRequestModel';
-import { getPositionFromThread, removeLeadingSlash } from '../../azdo/utils';
+import { removeLeadingSlash } from '../../azdo/utils';
 import { ViewedState } from '../../common/comment';
-import { DiffChangeType, DiffHunk } from '../../common/diffHunk';
-import { getDiffLineByPosition, getZeroBased } from '../../common/diffPositionMapping';
+import { DiffHunk } from '../../common/diffHunk';
 import { GitChangeType } from '../../common/file';
 import { asImageDataURI, EMPTY_IMAGE_URI, toResourceUri } from '../../common/uri';
 import { FileViewedDecorationProvider } from '../fileViewedDecorationProvider';

@@ -14,7 +14,7 @@ import { Identity } from 'azure-devops-node-api/interfaces/IdentitiesInterfaces'
 import * as vscode from 'vscode';
 import { Repository } from '../api/api';
 import { GitApiImpl } from '../api/api1';
-import { DiffSide, Reaction } from '../common/comment';
+import { DiffSide, IReviewThread, Reaction } from '../common/comment';
 import { DiffChangeType, DiffHunk, DiffLine } from '../common/diffHunk';
 import { Resource } from '../common/resources';
 import { ThreadData } from '../view/treeNodes/pullRequestNode';
@@ -337,7 +337,7 @@ export function getPositionFromThread(comment: GitPullRequestCommentThread) {
 }
 
 export function getDiffSide(thread: GitPullRequestCommentThread): DiffSide | undefined {
-	if (thread.pullRequestThreadContext?.trackingCriteria !== undefined) {
+	if (thread.pullRequestThreadContext?.trackingCriteria !== undefined || thread.threadContext !== undefined) {
 		if (
 			thread.pullRequestThreadContext?.trackingCriteria?.origLeftFileStart !== undefined ||
 			thread.threadContext?.leftFileStart !== undefined
@@ -385,6 +385,11 @@ export function createVSCodeCommentThread(thread: ThreadData, commentController:
 	updateCommentThreadLabel(vscodeThread);
 	vscodeThread.collapsibleState = thread.collapsibleState;
 	return vscodeThread;
+}
+
+export function updateThread(vscodeThread: GHPRCommentThread, comments: GHPRComment[]) {
+	vscodeThread.comments = comments;
+	updateCommentThreadLabel(vscodeThread);
 }
 
 export function removeLeadingSlash(path: string) {
