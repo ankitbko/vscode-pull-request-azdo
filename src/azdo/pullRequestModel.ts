@@ -308,6 +308,9 @@ export class PullRequestModel implements IPullRequestModel {
 		};
 
 		const result = await git?.createThread(thread, repoId, this.getPullRequestId());
+		if (!result) {
+			return result;
+		}
 
 		const newThread: IReviewThread = this.convertThreadToIReviewThread(result);
 		this.reviewThreadsCache.push(newThread);
@@ -347,6 +350,9 @@ export class PullRequestModel implements IPullRequestModel {
 		};
 
 		const result = await git?.updateThread(thread, repoId, this.getPullRequestId(), threadId);
+		if (!result) {
+			return result;
+		}
 
 		const newThread = this.convertThreadToIReviewThread(result);
 		this.reviewThreadsCache = [...this.reviewThreadsCache.filter(thread => thread.id !== threadId), newThread];
@@ -365,8 +371,11 @@ export class PullRequestModel implements IPullRequestModel {
 		const max = Math.max(...(iterations?.map(i => i.id!) ?? [0]));
 
 		const result = await this.getAllActiveThreads(max, 1);
+		if (!result) {
+			return result;
+		}
 
-		const reviewThreads = result.map(r => this.convertThreadToIReviewThread(r));
+		const reviewThreads = result?.map(r => this.convertThreadToIReviewThread(r));
 		this.diffThreads(reviewThreads);
 		this.reviewThreadsCache = reviewThreads;
 
@@ -426,7 +435,9 @@ export class PullRequestModel implements IPullRequestModel {
 		};
 
 		const result = await git?.createComment(comment, repoId, this.getPullRequestId(), threadId);
-
+		if (!result) {
+			return result;
+		}
 		const threadWithComment = this.reviewThreadsCache.find(thread => thread.id === threadId);
 
 		if (threadWithComment) {
@@ -495,6 +506,9 @@ export class PullRequestModel implements IPullRequestModel {
 		};
 
 		const result = await git!.updateComment(comment, repoId, this.getPullRequestId(), threadId, commentId);
+		if (!result) {
+			return result;
+		}
 
 		const threadWithComment = this.reviewThreadsCache.find(thread => thread.id === threadId);
 
