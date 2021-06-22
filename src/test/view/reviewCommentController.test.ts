@@ -55,7 +55,7 @@ class TestReviewCommentController extends ReviewCommentController {
 		_getCommentPermissions: (comment: Comment) => CommentPermissions,
 		commonCommentHandler: CommonCommentHandler,
 	) {
-		super(_reposManager, _repository, _localFileChanges, _obsoleteFileChanges, _comments, _getCommentPermissions);
+		super(_reposManager, _repository, _localFileChanges, _getCommentPermissions);
 		this._commonCommentHandler = commonCommentHandler;
 	}
 	public workspaceFileChangeCommentThreads() {
