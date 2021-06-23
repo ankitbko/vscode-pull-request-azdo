@@ -30,27 +30,6 @@ import { groupBy, uniqBy } from '../common/utils';
 import { URI_SCHEME_REVIEW } from '../constants';
 import { GitFileChangeNode, gitFileChangeNodeFilter, RemoteFileChangeNode } from './treeNodes/fileChangeNode';
 import { ThreadData } from './treeNodes/pullRequestNode';
-// import { ReactionGroup } from '../github/graphql';
-
-function mapCommentThreadsToHead(diffHunks: DiffHunk[], localDiff: string, commentThreads: GHPRCommentThread[]) {
-	commentThreads.forEach(thread => {
-		if (thread.comments && thread.comments.length) {
-			const comment = thread.comments[0];
-
-			if (comment instanceof GHPRComment) {
-				const diffLine = getDiffLineByPosition(diffHunks, getPositionFromThread(thread.rawThread)!);
-				if (diffLine) {
-					const positionInPr =
-						diffLine.type === DiffChangeType.Delete ? diffLine.oldLineNumber : diffLine.newLineNumber;
-					const newPosition = getZeroBased(mapOldPositionToNew(localDiff, positionInPr));
-					const range = new vscode.Range(newPosition, 0, newPosition, 0);
-
-					thread.range = range;
-				}
-			}
-		}
-	});
-}
 
 export class ReviewCommentController
 	implements vscode.Disposable, CommentHandler, vscode.CommentingRangeProvider, CommentReactionHandler {
