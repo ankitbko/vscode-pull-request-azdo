@@ -313,9 +313,9 @@ export class ReviewCommentController
 					const index = threadMap[thread.path].findIndex(t => t.threadId === thread.id);
 					if (index > -1) {
 						const matchingThread = threadMap[thread.path][index];
-						matchingThread.comments = thread.thread.comments.map(
-							c => new GHPRComment(c, this._getCommentPermissions(c), matchingThread),
-						);
+						matchingThread.comments = thread.thread.comments
+							.filter(c => !c.isDeleted)
+							.map(c => new GHPRComment(c, this._getCommentPermissions(c), matchingThread));
 					}
 				});
 
