@@ -14,7 +14,6 @@ import { GHPRComment, GHPRCommentThread, TemporaryComment } from '../azdo/prComm
 import {
 	CommentReactionHandler,
 	createVSCodeCommentThread,
-	getPositionFromThread,
 	removeLeadingSlash,
 	updateCommentReviewState,
 	updateCommentThreadLabel,
@@ -23,8 +22,7 @@ import { CommentHandler, registerCommentHandler, unregisterCommentHandler } from
 import { DiffSide, IReviewThread } from '../common/comment';
 import { getCommentingRanges } from '../common/commentingRanges';
 import { CommonCommentHandler } from '../common/commonCommentHandler';
-import { DiffChangeType, DiffHunk } from '../common/diffHunk';
-import { getDiffLineByPosition, getZeroBased, mapNewPositionToOld, mapOldPositionToNew } from '../common/diffPositionMapping';
+import { getZeroBased, mapNewPositionToOld, mapOldPositionToNew } from '../common/diffPositionMapping';
 import { fromReviewUri, ReviewUriParams, toReviewUri } from '../common/uri';
 import { groupBy, uniqBy } from '../common/utils';
 import { URI_SCHEME_REVIEW } from '../constants';
