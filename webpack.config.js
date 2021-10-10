@@ -16,6 +16,7 @@ const { ESBuildMinifyPlugin } = require('esbuild-loader');
 const ForkTsCheckerPlugin = require('fork-ts-checker-webpack-plugin');
 const JSON5 = require('json5');
 const TerserPlugin = require('terser-webpack-plugin');
+const webpack = require('webpack');
 
 async function resolveTSConfig(configFile) {
 	const data = await new Promise((resolve, reject) => {
@@ -172,11 +173,26 @@ async function getExtensionConfig(target, mode, env) {
 		}),
 	];
 
+	if (target === 'webworker') {
+		plugins.push(new webpack.ProvidePlugin({
+			process: path.join(
+				__dirname,
+				'node_modules',
+				'process',
+				'browser.js')
+		}));
+	}
+
+	const entry = {
+		extension: './src/extension.ts',
+	};
+	if (target === 'webworker') {
+		entry['test/index'] = './src/test/browser/index.ts';
+	}
+
 	return {
 		name: `extension:${target}`,
-		entry: {
-			extension: './src/extension.ts',
-		},
+		entry,
 		mode: mode,
 		target: target,
 		devtool: mode !== 'production' ? 'source-map' : undefined,
@@ -286,6 +302,7 @@ async function getExtensionConfig(target, mode, env) {
 							),
 							'../env/node/net': path.resolve(__dirname, 'src', 'env', 'browser', 'net'),
 							'../env/node/ssh': path.resolve(__dirname, 'src', 'env', 'browser', 'ssh'),
+							'../../env/node/ssh': path.resolve(__dirname, 'src', 'env', 'browser', 'ssh'),
 							'./env/node/gitProviders/api': path.resolve(
 								__dirname,
 								'src',
@@ -304,7 +321,7 @@ async function getExtensionConfig(target, mode, env) {
 					? {
 							path: require.resolve('path-browserify'),
 							url: false,
-							// stream: require.resolve("stream-browserify"),
+							stream: require.resolve("stream-browserify"),
 							// zlib: require.resolve("browserify-zlib"),
 							// crypto: require.resolve("crypto-browserify"),
 							// http: require.resolve("stream-http"),
@@ -312,14 +329,16 @@ async function getExtensionConfig(target, mode, env) {
 							// util: require.resolve("util/"),
 							// buffer:  require.resolve("buffer/"),
 							// assert: require.resolve("assert/"),
-							stream:false,
+							// stream:false,
 							zlib: false,
 							crypto:false,
 							http: false,
 							https:false,
 							util: false,
 							buffer:false,
-							assert:false,
+							'assert': require.resolve('assert'),
+							'os': require.resolve('os-browserify/browser'),
+							"constants": require.resolve("constants-browserify"),
 							fs: false,
 							net: false,
 							tls: false
