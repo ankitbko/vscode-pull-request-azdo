@@ -76,7 +76,7 @@ export class CredentialStore implements vscode.Disposable {
 		Logger.debug(`Manual personal access token option chosen.`, CREDENTIALS_COMPONENT_ID);
 		const token = await vscode.window.showInputBox({
 			value: '',
-			prompt: 'Please provide PAT',
+			prompt: 'Please provide PAT token for AzDO PR Extension',
 			placeHolder: '',
 			password: true,
 		});
@@ -144,6 +144,8 @@ export class CredentialStore implements vscode.Disposable {
 			return azdo;
 		} catch (e) {
 			await this._secretStore.delete(tokenKey);
+			Logger.appendLine(`Auth> Failed: ${e.message}`, CredentialStore.ID);
+			this._telemetry.sendTelemetryEvent('auth.failed');
 			vscode.window.showErrorMessage('Unable to authenticate. Signout and try again.');
 			return undefined;
 		}

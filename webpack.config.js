@@ -179,7 +179,8 @@ async function getExtensionConfig(target, mode, env) {
 				__dirname,
 				'node_modules',
 				'process',
-				'browser.js')
+				'browser.js'),
+			Buffer: ['buffer', 'Buffer'],
 		}));
 	}
 
@@ -320,26 +321,32 @@ async function getExtensionConfig(target, mode, env) {
 				target === 'webworker'
 					? {
 							path: require.resolve('path-browserify'),
-							url: false,
+							url: require.resolve('url'),
 							stream: require.resolve("stream-browserify"),
 							// zlib: require.resolve("browserify-zlib"),
 							// crypto: require.resolve("crypto-browserify"),
-							// http: require.resolve("stream-http"),
-							// https: require.resolve("https-browserify"),
+							http: require.resolve("stream-http"),
+							https: require.resolve("https-browserify"),
 							// util: require.resolve("util/"),
-							// buffer:  require.resolve("buffer/"),
+							buffer: require.resolve("buffer/"),
 							// assert: require.resolve("assert/"),
 							// stream:false,
 							zlib: false,
 							crypto:false,
-							http: false,
-							https:false,
+							// http: false,
+							//https:false,
 							util: false,
-							buffer:false,
+							// buffer:false,
 							'assert': require.resolve('assert'),
 							'os': require.resolve('os-browserify/browser'),
 							"constants": require.resolve("constants-browserify"),
-							fs: false,
+							fs: path.resolve(
+								__dirname,
+								'src',
+								'env',
+								'browser',
+								'fs',
+							),
 							net: false,
 							tls: false
 
