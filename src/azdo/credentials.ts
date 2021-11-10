@@ -76,7 +76,7 @@ export class CredentialStore implements vscode.Disposable {
 		Logger.debug(`Manual personal access token option chosen.`, CREDENTIALS_COMPONENT_ID);
 		const token = await vscode.window.showInputBox({
 			value: '',
-			prompt: 'Please provide PAT',
+			prompt: 'Azure Devops Pull Requests: Please provide PAT',
 			placeHolder: '',
 			password: true,
 		});
