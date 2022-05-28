@@ -5,19 +5,10 @@ export interface IHostConfiguration {
 	token: string | undefined;
 }
 
-export const AuthenticationScopes = [
-	'499b84ac-1321-427f-aa17-267ca6975798/.default',
-	'offline_access',
-	// Apparently app-specific scopes cannot be used with this authentication method
-	//'vso.code_write', // Code: Read & Write
-	//'vso.work_write', // Work items: Read & Write
-	//'vso.memberentitlementmanagement', // Member Entitlement Agreement: Read
-];
+export const AuthenticationScopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default', 'offline_access'];
 
 export const AuthenticationOptions: vscode.AuthenticationGetSessionOptions = {
 	createIfNone: true,
-	// Used for development, asks to sign in on every load
-	//forceNewSession: true,
 };
 
 let USE_TEST_SERVER = false;
