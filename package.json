@@ -12,10 +12,10 @@
 	},
 	"enableProposedApi": false,
 	"preview": true,
-	"version": "0.0.26",
+	"version": "0.0.27",
 	"publisher": "ankitbko",
 	"engines": {
-		"vscode": "^1.53.0"
+		"vscode": "^1.79.0"
 	},
 	"categories": [
 		"Other"
@@ -766,6 +766,7 @@
 		"@types/sinon": "7.0.11",
 		"@types/temp": "0.8.34",
 		"@types/uuid": "^8.3.0",
+		"@types/vscode": "1.79.0",
 		"@types/webpack-env": "^1.16.0",
 		"@typescript-eslint/eslint-plugin": "4.18.0",
 		"@typescript-eslint/parser": "4.18.0",

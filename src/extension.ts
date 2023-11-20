@@ -25,6 +25,7 @@ import { handler as uriHandler } from './common/uri';
 import { onceEvent } from './common/utils';
 import { EXTENSION_ID, SETTINGS_NAMESPACE } from './constants';
 import { registerBuiltinGitProvider, registerLiveShareGitProvider } from './gitProviders/api';
+import { MockGitProvider } from './gitProviders/mockGitProvider';
 import { FileTypeDecorationProvider } from './view/fileTypeDecorationProvider';
 import { PullRequestChangesTreeDataProvider } from './view/prChangesTreeDataProvider';
 import { PullRequestsTreeDataProvider } from './view/prsTreeDataProvider';
@@ -191,6 +192,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 	telemetry = new TelemetryReporter(EXTENSION_ID, version, aiKey);
 	context.subscriptions.push(telemetry);
 
+	// const session = await registerGithubExtension();
+
 	PersistentState.init(context);
 	const credentialStore = new CredentialStore(telemetry, context.secrets);
 	context.subscriptions.push(credentialStore);
@@ -199,7 +202,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 	const builtInGitProvider = await registerBuiltinGitProvider(credentialStore, apiImpl);
 	if (builtInGitProvider) {
 		context.subscriptions.push(builtInGitProvider);
+	} else {
+		const mockGitProvider = new MockGitProvider();
+		context.subscriptions.push(apiImpl.registerGitProvider(mockGitProvider));
 	}
+
 	const liveshareGitProvider = registerLiveShareGitProvider(apiImpl);
 	context.subscriptions.push(liveshareGitProvider);
 	const liveshareApiPromise = liveshareGitProvider.initialize();
@@ -218,6 +225,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 	}
 
 	return apiImpl;
+}
+
+const SCOPES = ['vso.identity', 'vso.code'];
+async function registerGithubExtension() {
+	const session = await vscode.authentication.getSession('azdo', SCOPES, { createIfNone: false });
+	return session;
 }
 
 export async function deactivate() {
