@@ -68,22 +68,6 @@ export class CredentialStore implements vscode.Disposable {
 		return this._azdoAPI;
 	}
 
-	private async requestPersonalAccessToken(): Promise<string | undefined> {
-		// Based on https://github.com/microsoft/azure-repos-vscode/blob/6bc90f0853086623486d0e527e9fe5a577370e9b/src/team-extension.ts#L74
-
-		Logger.debug(`Manual personal access token option chosen.`, CREDENTIALS_COMPONENT_ID);
-		const token = await vscode.window.showInputBox({
-			value: '',
-			prompt: 'Please provide PAT token for AzDO PR Extension',
-			placeHolder: '',
-			password: true,
-		});
-		if (token) {
-			this._telemetry.sendTelemetryEvent('auth.manual');
-		}
-		return token;
-	}
-
 	public async logout(): Promise<void> {
 		this._azdoAPI = undefined;
 	}
