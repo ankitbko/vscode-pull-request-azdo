@@ -65,8 +65,8 @@ async function init(
 	const localStorageService = new LocalStorageService(context.workspaceState);
 	const fileReviewedStatusService = new FileReviewedStatusService(localStorageService);
 
-	context.secrets.onDidChange(async e => {
-		if (e.key === credentialStore.getTokenKey()) {
+	vscode.authentication.onDidChangeSessions(async (e) => {
+		if (e.provider.id === 'microsoft') {
 			await reposManager.clearCredentialCache();
 			if (reviewManagers) {
 				reviewManagers.forEach(reviewManager => reviewManager.updateState());

@@ -37,8 +37,7 @@ export class CredentialStore implements vscode.Disposable {
 	private _onDidInitialize: vscode.EventEmitter<void> = new vscode.EventEmitter();
 	public readonly onDidInitialize: vscode.Event<void> = this._onDidInitialize.event;
 	private _sessionId: string | undefined;
-
-	private static PAT_TOKEN_KEY = 'azdoRepo.pat.';
+	private _sessionOptions: vscode.AuthenticationGetSessionOptions = { createIfNone: true };
 
 	constructor(private readonly _telemetry: ITelemetry, private readonly _secretStore: vscode.SecretStorage) {
 		this._disposables = [];
@@ -56,7 +55,9 @@ export class CredentialStore implements vscode.Disposable {
 	}
 
 	public async reset() {
-		this._azdoAPI = undefined;
+		this._sessionOptions.forceNewSession = true;
+		this._sessionOptions.createIfNone = false;
+		this._sessionOptions.clearSessionPreference = true;
 		await this.initialize();
 	}
 
@@ -70,14 +71,9 @@ export class CredentialStore implements vscode.Disposable {
 
 	public async logout(): Promise<void> {
 		this._azdoAPI = undefined;
-	}
-
-	public getTokenKey(orgUrl?: string): string {
-		let url = this._orgUrl ?? '';
-		if (!!orgUrl) {
-			url = orgUrl;
-		}
-		return CredentialStore.PAT_TOKEN_KEY.concat(url);
+		this._sessionOptions.forceNewSession = true;
+		this._sessionOptions.createIfNone = false;
+		this._sessionOptions.clearSessionPreference = true;
 	}
 
 	public async login(): Promise<Azdo | undefined> {
@@ -102,13 +98,12 @@ export class CredentialStore implements vscode.Disposable {
 		}
 		Logger.appendLine(`orgUrl is ${this._orgUrl}`, CredentialStore.ID);
 
-		const sessionOptions: vscode.AuthenticationGetSessionOptions = { createIfNone: true };
 		let retry: boolean = true;
 
 		while (retry) {
 			try
 			{
-				const session = await this.getSession(sessionOptions);
+				const session = await this.getSession(this._sessionOptions);
 				if (!session) {
 					Logger.appendLine('Auth> Unable to get session', CredentialStore.ID);
 					this._telemetry.sendTelemetryEvent('auth.failed');
@@ -128,6 +123,9 @@ export class CredentialStore implements vscode.Disposable {
 
 				Logger.debug(`Auth> Successful: Logged userid: ${azdo?.authenticatedUser?.id}`, CredentialStore.ID);
 				this._telemetry.sendTelemetryEvent('auth.success');
+				this._sessionOptions.forceNewSession = false;
+				this._sessionOptions.createIfNone = true;
+				this._sessionOptions.clearSessionPreference = false;
 
 				return azdo;
 			} catch (e) {
@@ -143,8 +141,9 @@ export class CredentialStore implements vscode.Disposable {
 
 			retry = (await vscode.window.showErrorMessage(ERROR, TRY_AGAIN, CANCEL)) === TRY_AGAIN;
 			if (retry) {
-				sessionOptions.forceNewSession = true;
-				sessionOptions.createIfNone = true;
+				this._sessionOptions.forceNewSession = true;
+				this._sessionOptions.createIfNone = false;
+				this._sessionOptions.clearSessionPreference = true;
 			}
 		}
 	}
