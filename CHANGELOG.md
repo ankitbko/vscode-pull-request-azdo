@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+- Fixed [#86](https://github.com/ankitbko/vscode-pull-request-azdo/issues/86) thanks to [danigt91](https://github.com/danigt91)
+
+
 ## 0.2.2
 - Reintroduced PAT token.
 - Fixed [#63](https://github.com/ankitbko/vscode-pull-request-azdo/issues/63)
