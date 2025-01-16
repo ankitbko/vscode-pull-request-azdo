@@ -29,6 +29,7 @@ export class MockExtensionContext implements ExtensionContext {
 	secrets: SecretStorage;
 
 	extension: any;
+	languageModelAccessInformation: any;
 
 	constructor() {
 		this.storagePath = temp.mkdirSync('storage-path');

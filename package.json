@@ -12,7 +12,7 @@
 	},
 	"enableProposedApi": false,
 	"preview": true,
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"publisher": "ankitbko",
 	"engines": {
 		"vscode": "^1.79.0"
@@ -777,13 +777,14 @@
 		"@typescript-eslint/parser": "4.18.0",
 		"@vscode/test-electron": "^1.6.1",
 		"@vscode/test-web": "^0.0.8",
+		"@vscode/vsce": "2.15.0",
 		"assert": "2.0.0",
 		"browserify-zlib": "0.2.0",
 		"buffer": "^6.0.3",
 		"chai": "^4.2.0",
 		"constants-browserify": "^1.0.0",
 		"crypto-browserify": "3.12.0",
-		"css-loader": "5.1.3",
+		"css-loader": "7.1.2",
 		"dotenv": "^8.2.0",
 		"esbuild-loader": "2.10.0",
 		"eslint": "7.22.0",
@@ -823,10 +824,9 @@
 		"typescript": "4.2.3",
 		"url": "^0.11.0",
 		"util": "0.12.3",
-		"vsce": "1.87.0",
 		"vscode-test": "^1.5.1",
-		"webpack": "5.26.3",
-		"webpack-cli": "4.2.0"
+		"webpack": "5.97.1",
+		"webpack-cli": "6.0.1"
 	},
 	"dependencies": {
 		"@octokit/rest": "^18.0.0",
