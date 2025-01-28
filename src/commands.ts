@@ -731,7 +731,7 @@ export function registerCommands(
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('pr.markFileAsViewed', async (treeNode: GitFileChangeNode) => {
+		vscode.commands.registerCommand('azdopr.markFileAsViewed', async (treeNode: GitFileChangeNode) => {
 			try {
 				await treeNode.pullRequest.markFileAsViewed(treeNode.sha);
 			} catch (e) {
@@ -741,12 +741,33 @@ export function registerCommands(
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('pr.unmarkFileAsViewed', async (treeNode: GitFileChangeNode) => {
+		vscode.commands.registerCommand('azdopr.unmarkFileAsViewed', async (treeNode: GitFileChangeNode) => {
 			try {
 				await treeNode.pullRequest.unmarkFileAsViewed(treeNode.sha);
 			} catch (e) {
 				vscode.window.showErrorMessage(`Marked file as not viewed failed: ${e}`);
 			}
 		}),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('azdopr.applySuggestionWithCopilot', async (commentThread: GHPRCommentThread) => {
+			/* __GDPR__
+				"pr.applySuggestionWithCopilot" : {}
+			*/
+			telemetry.sendTelemetryEvent('azdopr.applySuggestionWithCopilot');
+
+			commentThread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
+			const messages = commentThread.comments.map(comment => {
+				const body = comment.body instanceof vscode.MarkdownString ? comment.body.value : comment.body;
+				return `- ${comment.author.name}: ${body}`;
+			}).join('\n');
+
+			await vscode.commands.executeCommand('vscode.editorChat.start', {
+				initialRange: commentThread.range,
+				message: messages,
+				autoSend: true,
+			});
+		})
 	);
 }

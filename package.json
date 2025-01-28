@@ -360,6 +360,13 @@
 				"icon": "$(settings)"
 			},
 			{
+				"command": "azdopr.applySuggestionWithCopilot",
+				"title": "Apply Suggestion with Copilot",
+				"category": "AzDO Pull Requests",
+				"enablement": "!commentThreadIsEmpty",
+				"icon": "$(lightbulb)"
+			},
+			{
 				"command": "azdopr.editComment",
 				"title": "Edit Comment",
 				"category": "AzDO Pull Requests",
@@ -393,13 +400,13 @@
 				"category": "AzDO Pull Requests"
 			},
 			{
-				"command": "pr.markFileAsViewed",
+				"command": "azdopr.markFileAsViewed",
 				"title": "Mark File As Viewed",
 				"category": "AzDO Pull Requests",
 				"icon": "$(check)"
 			},
 			{
-				"command": "pr.unmarkFileAsViewed",
+				"command": "azdopr.unmarkFileAsViewed",
 				"title": "Mark File As Not Viewed",
 				"category": "AzDO Pull Requests",
 				"icon": "$(eye-closed)"
@@ -642,12 +649,12 @@
 					"when": "view =~ /(azdopr|azdoprStatus):azdo/ && viewItem =~ /filechange:MODIFY/"
 				},
 				{
-					"command": "pr.markFileAsViewed",
+					"command": "azdopr.markFileAsViewed",
 					"when": "view =~ /(azdopr|azdoprStatus):azdo/ && viewItem =~ /filechange(.*):unviewed/",
 					"group": "inline"
 				},
 				{
-					"command": "pr.unmarkFileAsViewed",
+					"command": "azdopr.unmarkFileAsViewed",
 					"when": "view =~ /(azdopr|azdoprStatus):azdo/ && viewItem =~ /filechange(.*):viewed/",
 					"group": "inline"
 				}
@@ -678,6 +685,11 @@
 					"command": "azdopr.changeThreadStatus",
 					"group": "inline",
 					"when": "commentController =~ /^azdopr-(browse|review)/ && !commentThreadIsEmpty"
+				},
+				{
+					"command": "azdopr.applySuggestionWithCopilot",
+					"group": "inline@0",
+					"when": "commentController =~ /^azdopr-(review)/ && !(comment =~ /hasSuggestion/)"
 				}
 			],
 			"comments/comment/title": [
