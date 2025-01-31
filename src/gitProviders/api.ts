@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode';
 import { API } from '../api/api';
-import { CredentialStore } from '../azdo/credentials';
 import { BuiltinGitProvider } from './builtinGit';
 import { LiveShareManager } from './vsls';
 
@@ -15,7 +14,6 @@ export function registerLiveShareGitProvider(apiImpl: API): LiveShareManager {
 }
 
 export async function registerBuiltinGitProvider(
-	_credentialStore: CredentialStore,
 	apiImpl: API,
 ): Promise<vscode.Disposable | undefined> {
 	const builtInGitProvider = await BuiltinGitProvider.createProvider();

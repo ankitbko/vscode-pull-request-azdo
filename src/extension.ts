@@ -192,20 +192,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 	telemetry = new TelemetryReporter(EXTENSION_ID, version, aiKey);
 	context.subscriptions.push(telemetry);
 
+	PersistentState.init(context);
+
 	// const session = await registerGithubExtension();
 
-	PersistentState.init(context);
-	const credentialStore = new CredentialStore(telemetry, context.secrets);
-	context.subscriptions.push(credentialStore);
-	await credentialStore.initialize();
-
-	const builtInGitProvider = await registerBuiltinGitProvider(credentialStore, apiImpl);
+	const builtInGitProvider = await registerBuiltinGitProvider(apiImpl);
 	if (builtInGitProvider) {
 		context.subscriptions.push(builtInGitProvider);
 	} else {
 		const mockGitProvider = new MockGitProvider();
 		context.subscriptions.push(apiImpl.registerGitProvider(mockGitProvider));
 	}
+
+	const credentialStore = new CredentialStore(telemetry, context.secrets, apiImpl);
+	context.subscriptions.push(credentialStore);
+	await credentialStore.initialize();
 
 	const liveshareGitProvider = registerLiveShareGitProvider(apiImpl);
 	context.subscriptions.push(liveshareGitProvider);

@@ -38,10 +38,12 @@
 			"title": "Azdo Pull Requests",
 			"properties": {
 				"azdoPullRequests.projectName": {
-					"type": "string"
+					"type": "string",
+					"default": ""
 				},
 				"azdoPullRequests.orgUrl": {
-					"type": "string"
+					"type": "string",
+					"default": ""
 				},
 				"azdoPullRequests.patToken": {
 					"type": "string",
