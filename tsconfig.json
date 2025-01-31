@@ -1,7 +1,14 @@
 {
 	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
-		"tsBuildInfoFile": "./out/tsconfig.tsbuildinfo"
+		"tsBuildInfoFile": "./out/tsconfig.tsbuildinfo",
+		"jsx": "react",
+		"jsxFactory": "vscpp",
+		"jsxFragmentFactory": "vscppf",
+		"types": [
+			"node",
+			"jest"
+		]
 	},
 	"exclude": ["node_modules", "src/test", "webviews"]
 }

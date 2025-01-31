@@ -752,9 +752,6 @@ export function registerCommands(
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('azdopr.applySuggestionWithCopilot', async (commentThread: GHPRCommentThread) => {
-			/* __GDPR__
-				"pr.applySuggestionWithCopilot" : {}
-			*/
 			telemetry.sendTelemetryEvent('azdopr.applySuggestionWithCopilot');
 
 			commentThread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
