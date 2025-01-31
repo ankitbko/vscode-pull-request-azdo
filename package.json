@@ -412,6 +412,40 @@
 				"icon": "$(eye-closed)"
 			}
 		],
+		"chatParticipants": [
+			{
+				"id": "vscode-pull-request-azdo",
+				"name": "azdopr",
+				"fullName": "Azure Devops Pull Requests",
+				"description": "Assistant specialized in reviewing pull requests from Azure Devops",
+				"isSticky": true,
+				"commands": [
+					{
+						"name": "explain",
+						"description": "Explains the changes made in this pull request together with the rationale behind them"
+					},
+					{
+						"name": "highlight",
+						"description": "Highlight important parts of this pull request by commenting on them"
+					},
+					{
+						"name": "updates",
+						"description": "Explains updates in the authored and assigned pull requests"
+					}
+				],
+				"disambiguation": [
+					{
+						"category": "pull_requests",
+						"description": "The user wants to understand the changes made in a pull request",
+						"examples": [
+							"What this pull request is about?",
+							"Why were these changes made?",
+							"Explain what this pull request does"
+						]
+					}
+				]
+			}
+		],
 		"viewsWelcome": [
 			{
 				"view": "azdo:login",
@@ -843,6 +877,8 @@
 	"dependencies": {
 		"@octokit/rest": "^18.0.0",
 		"@octokit/types": "^5.1.0",
+		"@vscode/chat-extension-utils": "^0.0.0-alpha.5",
+		"@vscode/prompt-tsx": "^0.3.0-alpha.17",
 		"apollo-boost": "^0.1.22",
 		"apollo-link-context": "^1.0.12",
 		"azure-devops-node-api": "^10.1.2",
