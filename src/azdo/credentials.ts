@@ -4,8 +4,11 @@ import { Identity } from 'azure-devops-node-api/interfaces/IdentitiesInterfaces'
 import * as vscode from 'vscode';
 import { IGit } from '../api/api';
 import Logger from '../common/logger';
+import { parseRepositoryRemotes, Remote } from '../common/remote';
 import { ITelemetry } from '../common/telemetry';
 import { SETTINGS_NAMESPACE } from '../constants';
+import { REMOTES_SETTING } from './folderRepositoryManager';
+
 
 const PROJECT_SETTINGS = 'projectName';
 const ORGURL_SETTINGS = 'orgUrl';
@@ -88,32 +91,27 @@ export class CredentialStore implements vscode.Disposable {
 		this._azdoAPI = undefined;
 	}
 
-	public inferOrgConfigFromGit(git: IGit): [string, string] {
-		// TODO: Need better way of handling multiple repositories. CredentialStore should be initialized within each FolderRepositoryManager and scoped to particular AzDORepository.
-		if (git.repositories.length !== 1) {
-			Logger.appendLine(`Unable to infer org config from git. Repository Length: ${git.repositories.length}`, CredentialStore.ID);
-			return [undefined, undefined];
-		}
-		if (git.repositories[0].state.remotes.length !== 1) {
-			Logger.appendLine(`Unable to infer org config from git. Remote Length: ${git.repositories[0].state.remotes.length}. Remotes: ${git.repositories[0].state.remotes.map(r => r.name).join(',')}`, CredentialStore.ID);
-			return [undefined, undefined];
+	public inferOrgConfigFromGitRemote(remotes: Remote[]): AzdoOrgConfig | undefined {
+		if (remotes.length !== 1) {
+			Logger.appendLine(`Unable to infer org config from git. Remote Length: ${remotes.length}. Remotes: ${remotes.map(r => r.remoteName).join(',')}`, CredentialStore.ID);
+			return undefined;
 		}
 
-		const fetchUrl = git.repositories[0].state.remotes[0].fetchUrl;
-		// Assumption for fetchUrl: https://<org>@dev.azure.com/<org>/<project>/_git/<repo>
+		const url = remotes[0].url;
+		// Assumption for url: https://<org>@dev.azure.com/<org>/<project>/_git/<repo>
 
-		Logger.appendLine('fetchUrl: ' + fetchUrl, CredentialStore.ID);
-		const orgUrlMatch = fetchUrl.match(/https:\/\/(.+?)@dev\.azure\.com\/(.+?)\//);
+		Logger.appendLine('Inferring org config from url: ' + url, CredentialStore.ID);
+		const orgUrlMatch = url.match(/https:\/\/(.+?)@dev\.azure\.com\/(.+?)\//);
 		Logger.debug(`orgUrlMatch: ${orgUrlMatch}`, CredentialStore.ID);
 
 		const orgUrl = orgUrlMatch && orgUrlMatch.length > 2 ? `https://dev.azure.com/${orgUrlMatch[2]}` : undefined; // should be parsed to https://dev.azure.com/<org>
-		const projectNameMatch = fetchUrl.match(/\/([^\/]+)\/_git\//);
+		const projectNameMatch = url.match(/\/([^\/]+)\/_git\//);
 		Logger.debug(`projectNameMatch: ${projectNameMatch}`, CredentialStore.ID);
 
 		const projectName = projectNameMatch && projectNameMatch.length > 1 ? projectNameMatch[1] : undefined; // should be parsed to <project>
 		Logger.appendLine(`Inferred orgUrl: ${orgUrl}, projectName: ${projectName}`, CredentialStore.ID);
 
-		return [orgUrl, projectName];
+		return new AzdoOrgConfig(orgUrl, projectName);
 	}
 
 	public getOrgConfig(): AzdoOrgConfig | undefined {
@@ -121,7 +119,17 @@ export class CredentialStore implements vscode.Disposable {
 		let orgUrl = vscode.workspace.getConfiguration(SETTINGS_NAMESPACE).get<string | undefined>(ORGURL_SETTINGS);
 
 		if (!projectName || !orgUrl) {
-			[orgUrl, projectName] = this.inferOrgConfigFromGit(this._gitAPI);
+			const remotes = this._gitAPI.repositories.map(r => parseRepositoryRemotes(r));
+			const inferredConfigs = remotes.map(r => this.inferOrgConfigFromGitRemote(r)).filter(c => !!c && c.orgUrl && c.projectName);
+
+			// TODO: Need better way of handling multiple repositories. CredentialStore should be initialized within each FolderRepositoryManager and scoped to particular AzDORepository.
+			if ([...new Set(inferredConfigs.map(a => a.orgUrl))].length !== 1 || [...new Set(inferredConfigs.map(a => a.projectName))].length !== 1) {
+				Logger.appendLine(`Unable to infer org config from git. Repository Length: ${this._gitAPI.repositories.length}. Inferred Configs: ${inferredConfigs}`, CredentialStore.ID);
+				return undefined;
+			}
+
+			Logger.appendLine(`Selected orgUrl: ${inferredConfigs[0]?.orgUrl}, projectName: ${inferredConfigs[0]?.projectName}`, CredentialStore.ID);
+			return inferredConfigs[0];
 		}
 
 		if (!projectName) {

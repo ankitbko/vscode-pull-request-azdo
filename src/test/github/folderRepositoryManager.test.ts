@@ -16,6 +16,7 @@ import { MockCommandRegistry } from '../mocks/mockCommandRegistry';
 import { createFakeSecretStorage } from '../mocks/mockExtensionContext';
 import { MockRepository } from '../mocks/mockRepository';
 import { MockTelemetry } from '../mocks/mockTelemetry';
+import { MockGitProvider } from '../../gitProviders/mockGitProvider';
 
 describe('PullRequestManager', function () {
 	let sinon: SinonSandbox;
@@ -29,8 +30,13 @@ describe('PullRequestManager', function () {
 
 		telemetry = new MockTelemetry();
 		const repository = new MockRepository();
+		repository.addRemote('origin', 'git@dev.azure.com.com:aaa/aaa/bbb/_git/bbb');
 		const secretStorage = createFakeSecretStorage();
-		const credentialStore = new CredentialStore(telemetry, secretStorage);
+
+		const gitImpl = new GitApiImpl();
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+		const credentialStore = new CredentialStore(telemetry, secretStorage, gitImpl);
 		fileReviewedStatusService = sinon.createStubInstance(FileReviewedStatusService);
 		manager = new FolderRepositoryManager(repository, telemetry, new GitApiImpl(), credentialStore, fileReviewedStatusService);
 	});

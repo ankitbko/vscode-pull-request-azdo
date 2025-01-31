@@ -3,7 +3,7 @@ import { strict as assert } from 'assert';
 import { GitPullRequest } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import { createSandbox, SinonSandbox } from 'sinon';
 import { createMock } from 'ts-auto-mock';
-import { RefType } from '../../api/api1';
+import { GitApiImpl, RefType } from '../../api/api1';
 import { CredentialStore } from '../../azdo/credentials';
 import { IRepository } from '../../azdo/interface';
 import { PullRequestGitHelper } from '../../azdo/pullRequestGitHelper';
@@ -16,6 +16,7 @@ import { MockCommandRegistry } from '../mocks/mockCommandRegistry';
 import { createFakeSecretStorage } from '../mocks/mockExtensionContext';
 import { MockRepository } from '../mocks/mockRepository';
 import { MockTelemetry } from '../mocks/mockTelemetry';
+import { MockGitProvider } from '../../gitProviders/mockGitProvider';
 
 describe('PullRequestGitHelper', function () {
 	let sinon: SinonSandbox;
@@ -29,9 +30,14 @@ describe('PullRequestGitHelper', function () {
 		MockCommandRegistry.install(sinon);
 
 		repository = new MockRepository();
+		repository.addRemote('origin', 'git@dev.azure.com.com:aaa/aaa/bbb/_git/bbb');
 		telemetry = new MockTelemetry();
 		const secretStore = createFakeSecretStorage();
-		credentialStore = new CredentialStore(telemetry, secretStore);
+
+		const gitImpl = new GitApiImpl();
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+		credentialStore = new CredentialStore(telemetry, secretStore, gitImpl);
 	});
 
 	afterEach(function () {
