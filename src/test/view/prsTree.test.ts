@@ -24,6 +24,7 @@ import { MockCommandRegistry } from '../mocks/mockCommandRegistry';
 import { createFakeSecretStorage, MockExtensionContext } from '../mocks/mockExtensionContext';
 import { MockRepository } from '../mocks/mockRepository';
 import { MockTelemetry } from '../mocks/mockTelemetry';
+import { MockGitProvider } from '../../gitProviders/mockGitProvider';
 
 describe('GitHub Pull Requests view', function () {
 	let sinon: SinonSandbox;
@@ -32,6 +33,8 @@ describe('GitHub Pull Requests view', function () {
 	let provider: PullRequestsTreeDataProvider;
 	let credentialStore: CredentialStore;
 	let fileReviewedStatusService;
+	let repository: MockRepository;
+	let gitImpl: GitApiImpl;
 
 	beforeEach(function () {
 		sinon = createSandbox();
@@ -39,9 +42,16 @@ describe('GitHub Pull Requests view', function () {
 
 		context = new MockExtensionContext();
 
+		repository = new MockRepository();
+		repository.addRemote('origin', 'git@dev.azure.com.com:aaa/aaa/bbb/_git/bbb');
+
+		gitImpl = new GitApiImpl();
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+
 		telemetry = new MockTelemetry();
 		provider = new PullRequestsTreeDataProvider(telemetry);
-		credentialStore = new CredentialStore(telemetry, createFakeSecretStorage());
+		credentialStore = new CredentialStore(telemetry, createFakeSecretStorage(), gitImpl);
 		fileReviewedStatusService = sinon.createStubInstance(FileReviewedStatusService);
 
 		// For tree view unit tests, we don't test the authentication flow, so `showSignInNotification` returns
@@ -165,7 +175,7 @@ describe('GitHub Pull Requests view', function () {
 					},
 					sourceRefName: 'ref/heads/branch',
 					targetRefName: 'ref/heads/main',
-					repository: createMock<GitRepository>(),
+					// repository: createMock<GitRepository>(),
 				}),
 				azdoRepository,
 			);
@@ -183,7 +193,7 @@ describe('GitHub Pull Requests view', function () {
 					},
 					sourceRefName: 'ref/heads/branch',
 					targetRefName: 'ref/heads/main',
-					repository: createMock<GitRepository>(),
+					// repository: createMock<GitRepository>(),
 				}),
 				azdoRepository,
 			);

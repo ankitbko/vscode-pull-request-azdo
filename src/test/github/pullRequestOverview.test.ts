@@ -21,6 +21,7 @@ import { createFakeSecretStorage, MockExtensionContext } from '../mocks/mockExte
 import { MockRepository } from '../mocks/mockRepository';
 import { MockTelemetry } from '../mocks/mockTelemetry';
 import { FileReviewedStatusService } from '../../azdo/fileReviewedStatusService';
+import { MockGitProvider } from '../../gitProviders/mockGitProvider';
 
 const EXTENSION_PATH = path.resolve(__dirname, '../../..');
 
@@ -42,7 +43,10 @@ describe('PullRequestOverview', function () {
 
 		const repository = new MockRepository();
 		telemetry = new MockTelemetry();
-		const credentialStore = new CredentialStore(telemetry, createFakeSecretStorage())
+		const gitImpl = new GitApiImpl();
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+		const credentialStore = new CredentialStore(telemetry, createFakeSecretStorage(), gitImpl);
 		fileReviewedStatusService = sinon.createStubInstance(FileReviewedStatusService);
 		pullRequestManager = new FolderRepositoryManager(repository, telemetry, new GitApiImpl(), credentialStore, fileReviewedStatusService);
 		workItem = new AzdoWorkItem(credentialStore, telemetry);

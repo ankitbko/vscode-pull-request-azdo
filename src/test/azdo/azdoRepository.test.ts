@@ -10,6 +10,9 @@ import { MockCommandRegistry } from '../mocks/mockCommandRegistry';
 import { createFakeSecretStorage } from '../mocks/mockExtensionContext';
 import { MockTelemetry } from '../mocks/mockTelemetry';
 import { FileReviewedStatusService } from '../../azdo/fileReviewedStatusService';
+import { GitApiImpl } from '../../api/api1';
+import { MockGitProvider } from '../../gitProviders/mockGitProvider';
+import { MockRepository } from '../mocks/mockRepository';
 
 describe('AzdoRepository', function () {
 	let sinon: SinonSandbox;
@@ -30,7 +33,11 @@ describe('AzdoRepository', function () {
 		const secretStorage = createFakeSecretStorage();
 
 		telemetry = new MockTelemetry();
-		credentialStore = new CredentialStore(telemetry, secretStorage);
+		const repository = new MockRepository();
+		const gitImpl = new GitApiImpl();
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+		credentialStore = new CredentialStore(telemetry, secretStorage, gitImpl);
 		fileReviewedStatusService = sinon.createStubInstance(FileReviewedStatusService);
 	});
 
