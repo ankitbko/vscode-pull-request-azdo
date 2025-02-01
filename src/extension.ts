@@ -16,6 +16,8 @@ import { FolderRepositoryManager } from './azdo/folderRepositoryManager';
 import { RepositoriesManager } from './azdo/repositoriesManager';
 import { AzdoUserManager } from './azdo/userManager';
 import { AzdoWorkItem } from './azdo/workItem';
+import { registerChatParticipant } from './chat/chat.participant';
+import { ChatProvider } from './chat/chat.provider';
 import { registerCommands } from './commands';
 import { LocalStorageService } from './common/localStorageService';
 import Logger from './common/logger';
@@ -128,6 +130,10 @@ async function init(
 	registerCommands(context, reposManager, reviewManagers, workItem, userManager, telemetry, credentialStore, tree);
 	const layout = vscode.workspace.getConfiguration(SETTINGS_NAMESPACE).get<string>('fileListLayout');
 	await vscode.commands.executeCommand('setContext', 'fileListLayout:flat', layout === 'flat');
+
+	// TODO: inject the necessary context here
+	const chatProvider = new ChatProvider(context);
+	registerChatParticipant(context, chatProvider);
 
 	git.onDidChangeState(() => {
 		reviewManagers.forEach(reviewManager => reviewManager.updateState());
