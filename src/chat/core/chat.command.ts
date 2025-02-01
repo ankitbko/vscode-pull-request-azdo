@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
+import { RepositoriesManager } from '../../azdo/repositoriesManager';
 import { StateManager } from '../chat.state';
-import { PluginApi } from '../plugin.api';
 import { IChatResult } from './chat.result';
 
 export interface CommandContext {
 	extensionContext: vscode.ExtensionContext;
 	stateManager: StateManager;
-	pluginApi: PluginApi;
+	repositoriesManager: RepositoriesManager;
 }
 
 interface IChatCommand {

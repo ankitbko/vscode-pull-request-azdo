@@ -1,9 +1,9 @@
 import { ExtensionContext } from 'vscode';
+import { RepositoriesManager } from '../azdo/repositoriesManager';
 import { StateManager } from './chat.state';
-import ExplainCommand from './commands/explain/explain.command';
+// import ExplainCommand from './commands/explain/explain.command';
 import HighlightCommand from './commands/highlight/highlight.command';
 import IChatCommand from './core/chat.command';
-import { PluginApi } from './plugin.api';
 
 export interface IChatProvider {
 	getChatCommandByName(commandName: string): IChatCommand;
@@ -13,7 +13,7 @@ export interface IChatProvider {
 export class ChatProvider implements IChatProvider {
 	private readonly stateManager: StateManager;
 
-	constructor(private readonly extensionContext: ExtensionContext, private readonly api: PluginApi) {
+	constructor(private readonly extensionContext: ExtensionContext, private readonly repositoriesManager: RepositoriesManager) {
 		this.stateManager = new StateManager(extensionContext);
 	}
 
@@ -21,14 +21,16 @@ export class ChatProvider implements IChatProvider {
 		const commandContext = {
 			extensionContext: this.extensionContext,
 			stateManager: this.stateManager,
-			pluginApi: this.api,
+			repositoriesManager: this.repositoriesManager,
 		};
 
 		switch (commandName) {
 			case 'highlight':
 				return new HighlightCommand(commandContext);
 			case 'explain':
-				return new ExplainCommand(commandContext);
+
+				throw new Error("Not implemented yet.");
+				// return new ExplainCommand(commandContext);
 			default:
 				throw new Error(`Command ${commandName} not found`);
 		}

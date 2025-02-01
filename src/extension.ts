@@ -132,7 +132,7 @@ async function init(
 	await vscode.commands.executeCommand('setContext', 'fileListLayout:flat', layout === 'flat');
 
 	// TODO: inject the necessary context here
-	const chatProvider = new ChatProvider(context);
+	const chatProvider = new ChatProvider(context, reposManager);
 	registerChatParticipant(context, chatProvider);
 
 	git.onDidChangeState(() => {
