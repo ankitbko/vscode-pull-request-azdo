@@ -1,16 +1,22 @@
-import { AssistantMessage, BasePromptElementProps, PromptElement, PromptSizing, UserMessage } from '@vscode/prompt-tsx';
+import { BasePromptElementProps, PromptElement, SystemMessage, UserMessage } from '@vscode/prompt-tsx';
+import { ChatContext, ChatPromptReference, Uri } from 'vscode';
+import { History } from '../../core/prompts/chat.history';
+import FileContext, { IFilesToInclude } from '../../core/prompts/file.contents';
 
 export interface ExplainPromptData extends BasePromptElementProps {
+	history: ChatContext['history'];
+	userQuery: string;
+	referencedFiles: IFilesToInclude[];
 	description: string;
-	changedFiles: string[];
-	workItemDescriptions: string[];
+	allFilesChanged: string[];
+	referencedWorkItems: string[];
 }
 
-export default class extends PromptElement<ExplainPromptData> {
-	render(_state: void, _sizing: PromptSizing) {
+export default class ExplainPrompt extends PromptElement<ExplainPromptData> {
+	render() {
 		return (
 			<>
-				<AssistantMessage>
+				<SystemMessage priority={100}>
 					# Context
 					<br />
 					Imagine a scenario where you act like an expert software engineer helping review a pull request.
@@ -25,26 +31,11 @@ export default class extends PromptElement<ExplainPromptData> {
 					<br />
 					- Is there any technical debt introduced?
 					<br />- What are the risks associated with the changes?
-				</AssistantMessage>
-				<UserMessage>
-					Help me review the following pull request: # User-provided description
-					<br />
-					{this.props.description}
-					<br />
-					# Corresponding work item
-					<br />
-					{this.props.workItemDescriptions.forEach(
-						(workItemDescription, index) => `
-					# Work item ${index}
-					${workItemDescription}
-
-					`,
-					)}
-					<br />
-					# Changes made
-					<br />
-					{this.props.changedFiles.forEach(changedFile => `- ${changedFile}`)}
-				</UserMessage>
+				</SystemMessage>
+				<History history={this.props.history} passPriority older={0} newer={80} />
+				<UserMessage priority={90}>{this.props.userQuery}</UserMessage>
+				<UserMessage priority={70}>{this.props.description}</UserMessage>
+				<FileContext priority={70} flexGrow={1} files={this.props.referencedFiles} />
 			</>
 		);
 	}
