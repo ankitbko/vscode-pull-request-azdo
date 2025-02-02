@@ -8,7 +8,7 @@ import { IChatResult } from '../../core/chat.result';
 import ExplainPrompt, { ExplainPromptData } from './explain.prompt';
 
 /**
- * Explains the changes made and the rationale of the currently active pull request.
+ * Explains the changes made and the rationale of the currently active pull request (the one that we are checked out at the moment).
  */
 export default class implements IChatCommand {
 	readonly name: string = 'explain';

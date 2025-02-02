@@ -1,4 +1,4 @@
-import { CancellationToken, ChatContext, ChatRequest, ChatResponseStream } from 'vscode';
+import { CancellationToken, ChatContext, ChatRequest, ChatResponseStream, l10n } from 'vscode';
 import { PRType } from '../../../azdo/interface';
 import Logger from '../../../common/logger';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
@@ -7,8 +7,7 @@ import { IChatResult } from '../../core/chat.result';
 import FeedPrompt, { FeedPromptData } from './feed.prompt';
 
 /**
- * Automatically highlights the important parts of the currently reviewed pull request.
- * The highlights will post a comment placeholders for you to review.
+ * Outlines the pull requests that may need your attention and the changes in them.
  */
 export default class implements IChatCommand {
 	readonly name: string = 'overview';
@@ -43,6 +42,14 @@ export default class implements IChatCommand {
 			model: request.model,
 			stream,
 		}, token);
+
+		allActivePrs.forEach(pr => {
+			stream.button({
+				command: 'azdopr.openDescription',
+				title: `See ${pr.getPullRequestId()}`,
+				arguments: [pr],
+			});
+		});
 
 		return {
 			metadata: { command: 'foo' },
