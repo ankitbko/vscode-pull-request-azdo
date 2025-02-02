@@ -39,9 +39,7 @@ export default class implements IChatCommand {
 		// File changes in PR: allActivePrs[0].getFileChangesInfo()
 		// allActivePrs[0].getWorkItemRefs
 
-		const activeFileUri = request.references.filter(x => x.modelDescription === "User's current visible code")
-			.map(x => x.value?.toString())
-			.map(x => Uri.parse(x as string))[0];
+		const activeFileUri = (request.references.filter(x => x.modelDescription === "User's current visible code")[0].value as { uri: Uri }).uri;
 
 		const activePrManager = this.context.repositoriesManager.getManagerForFile(activeFileUri);
 
@@ -50,6 +48,7 @@ export default class implements IChatCommand {
 			return { metadata: { command: this.name } };
 		}
 
+		// TODO: This is never set, why? Is it set only if I have "local pull request branch set"? But somehow I cannot even select it (0 nodes under this tree root).
 		const activePR = activePrManager.activePullRequest;
 
 		const referencedTextFiles = await resolveAllReferences(request.references);
@@ -65,11 +64,10 @@ export default class implements IChatCommand {
 
 		await executePrompt({
 			prompt: ExplainPrompt,
-			previousMessages: [],
 			data: data,
 			model: request.model,
 			stream,
-		});
+		}, token);
 
 		return { metadata: { command: this.name } };
 	}

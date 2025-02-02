@@ -1,5 +1,5 @@
-import { BasePromptElementProps, PromptElement, SystemMessage, UserMessage } from '@vscode/prompt-tsx';
-import { ChatContext, ChatPromptReference, Uri } from 'vscode';
+import { BasePromptElementProps, PromptElement, UserMessage } from '@vscode/prompt-tsx';
+import { ChatContext } from 'vscode';
 import { History } from '../../core/prompts/chat.history';
 import FileContext, { IFilesToInclude } from '../../core/prompts/file.contents';
 
@@ -16,7 +16,7 @@ export default class ExplainPrompt extends PromptElement<ExplainPromptData> {
 	render() {
 		return (
 			<>
-				<SystemMessage priority={100}>
+				<UserMessage priority={100}>
 					# Context
 					<br />
 					Imagine a scenario where you act like an expert software engineer helping review a pull request.
@@ -31,7 +31,7 @@ export default class ExplainPrompt extends PromptElement<ExplainPromptData> {
 					<br />
 					- Is there any technical debt introduced?
 					<br />- What are the risks associated with the changes?
-				</SystemMessage>
+				</UserMessage>
 				<History history={this.props.history} passPriority older={0} newer={80} />
 				<UserMessage priority={90}>{this.props.userQuery}</UserMessage>
 				<UserMessage priority={70}>{this.props.description}</UserMessage>
