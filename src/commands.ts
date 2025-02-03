@@ -767,4 +767,33 @@ export function registerCommands(
 			});
 		})
 	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('azdopr.copilotInsights', async (pr: PRNode | PullRequestModel) => {
+			telemetry.sendTelemetryEvent('azdopr.copilotInsights');
+
+			let pullRequestModel: PullRequestModel | undefined;
+			if (pr) {
+				pullRequestModel = pr instanceof PullRequestModel ? pr : pr.pullRequestModel;
+			} else {
+				const activePullRequests: PullRequestModel[] = reposManager.folderManagers
+					.map(folderManager => folderManager.activePullRequest!)
+					.filter(activePR => !!activePR);
+				pullRequestModel = await chooseItem<PullRequestModel>(
+					activePullRequests,
+					itemValue => `${itemValue.getPullRequestId()}: ${itemValue.item.title}`,
+					'Pull request to close',
+				);
+			}
+			if (!pullRequestModel) {
+				return;
+			}
+
+			const message = `@azdopr /highlight Please provide insights for Pull Request #${pullRequestModel.getPullRequestId()} titled "${pullRequestModel.item.title}".`;
+			await vscode.commands.executeCommand('workbench.action.chat.open', {
+				query: message,
+				isPartialQuery: true, // make it false to auto send the message.
+			});
+		})
+	);
 }

@@ -3,6 +3,7 @@ import { PRType } from '../../../azdo/interface';
 import Logger from '../../../common/logger';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
 import { IChatResult } from '../../core/chat.result';
+import { PullRequestOverviewPanel } from '../../../azdo/pullRequestOverview';
 
 /**
  * Automatically highlights the important parts of the currently reviewed pull request.
@@ -21,6 +22,8 @@ export default class implements IChatCommand {
 	): Promise<IChatResult> {
 		const folderManagers = this.context.repositoriesManager.folderManagers;
 		const allActivePrs = (await Promise.all(folderManagers.map(f => f.getPullRequests(PRType.AllActive)))).flatMap(t => t.items);
+		const panel = PullRequestOverviewPanel.currentPanel;
+		const pr = panel?.pullRequest;
 		Logger.appendLine(`Chat > Highlight > allActivePrs: ${allActivePrs.length}`, this.name);
 
 		// Active Pull Request (pull request raised from current branch): folderManagers[0].activePullRequest

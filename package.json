@@ -364,9 +364,15 @@
 			{
 				"command": "azdopr.applySuggestionWithCopilot",
 				"title": "Apply Suggestion with Copilot",
-				"category": "AzDO Pull Requests",
+				"category": "AzDO Pull Requests Copilot",
 				"enablement": "!commentThreadIsEmpty",
-				"icon": "$(lightbulb)"
+				"icon": "$(copilot)"
+			},
+			{
+				"command": "azdopr.copilotInsights",
+				"title": "Get Insights with Copilot",
+				"category": "AzDO Pull Requests Copilot",
+				"icon": "$(copilot)"
 			},
 			{
 				"command": "azdopr.editComment",
@@ -692,6 +698,11 @@
 				{
 					"command": "azdopr.unmarkFileAsViewed",
 					"when": "view =~ /(azdopr|azdoprStatus):azdo/ && viewItem =~ /filechange(.*):viewed/",
+					"group": "inline"
+				},
+				{
+					"command": "azdopr.copilotInsights",
+					"when": "view == azdopr:azdo && viewItem =~ /pullrequest/",
 					"group": "inline"
 				}
 			],
