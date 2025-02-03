@@ -431,7 +431,7 @@
 						"description": "Highlight important parts of this pull request by commenting on them"
 					},
 					{
-						"name": "updates",
+						"name": "feed",
 						"description": "Explains updates in the authored and assigned pull requests"
 					}
 				],

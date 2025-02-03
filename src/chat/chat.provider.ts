@@ -1,7 +1,8 @@
 import { ExtensionContext } from 'vscode';
 import { RepositoriesManager } from '../azdo/repositoriesManager';
 import { StateManager } from './chat.state';
-// import ExplainCommand from './commands/explain/explain.command';
+import ExplainCommand from './commands/explain/explain.command';
+import FeedCommand from './commands/feed/feed.command';
 import HighlightCommand from './commands/highlight/highlight.command';
 import IChatCommand from './core/chat.command';
 
@@ -28,9 +29,9 @@ export class ChatProvider implements IChatProvider {
 			case 'highlight':
 				return new HighlightCommand(commandContext);
 			case 'explain':
-
-				throw new Error("Not implemented yet.");
-				// return new ExplainCommand(commandContext);
+				return new ExplainCommand(commandContext);
+			case 'feed':
+				return new FeedCommand(commandContext);
 			default:
 				throw new Error(`Command ${commandName} not found`);
 		}
