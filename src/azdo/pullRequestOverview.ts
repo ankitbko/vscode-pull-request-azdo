@@ -95,6 +95,10 @@ export class PullRequestOverviewPanel extends WebviewBase {
 		}
 	}
 
+	public get pullRequest(): PullRequestModel {
+		return this._item;
+	}
+
 	protected constructor(
 		extensionPath: string,
 		column: vscode.ViewColumn,
