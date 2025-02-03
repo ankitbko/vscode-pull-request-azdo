@@ -5,8 +5,10 @@ import type {
 	Change,
 	Commit,
 	CommitOptions,
+	FetchOptions,
 	InputBox,
 	Ref,
+	RefQuery,
 	Repository,
 	RepositoryState,
 	RepositoryUIState,
@@ -18,6 +20,9 @@ type Mutable<T> = {
 };
 
 export class MockRepository implements Repository {
+	add(paths: string[]): Promise<void> {
+		return Promise.reject(new Error(`Unexpected add(${paths.join(', ')})`));
+	}
 	commit(message: string, opts?: CommitOptions): Promise<void> {
 		return Promise.reject(new Error(`Unexpected commit(${message}, ${opts})`));
 	}
@@ -48,11 +53,15 @@ export class MockRepository implements Repository {
 	getMergeBase(ref1: string, ref2: string): Promise<string> {
 		return Promise.reject(new Error(`Unexpected getMergeBase(${ref1}, ${ref2})`));
 	}
+	async getRefs(_query: RefQuery, _cancellationToken?: any): Promise<Ref[]> {
+		// ignore the query
+		return this._state.refs;
+	}
 	log(options?: any): Promise<Commit[]> {
 		return Promise.reject(new Error(`Unexpected log(${options})`));
 	}
 
-	private _state: Mutable<RepositoryState> = {
+	private _state: Mutable<RepositoryState & { refs: Ref[] }> = {
 		HEAD: undefined,
 		refs: [],
 		remotes: [],
@@ -61,7 +70,7 @@ export class MockRepository implements Repository {
 		mergeChanges: [],
 		indexChanges: [],
 		workingTreeChanges: [],
-		onDidChange: () => ({ dispose() {} }),
+		onDidChange: () => ({ dispose() { } }),
 	};
 	private _config: Map<string, string> = new Map();
 	private _branches: Branch[] = [];
@@ -77,7 +86,7 @@ export class MockRepository implements Repository {
 
 	ui: RepositoryUIState = {
 		selected: true,
-		onDidChange: () => ({ dispose() {} }),
+		onDidChange: () => ({ dispose() { } }),
 	};
 
 	async getConfigs(): Promise<{ key: string; value: string }[]> {
@@ -173,6 +182,10 @@ export class MockRepository implements Repository {
 		return [];
 	}
 
+	async getBranchBase(name: string): Promise<Branch | undefined> {
+		throw new Error(`Unexpected getBranchBase(${name})`);
+	}
+
 	async setBranchUpstream(name: string, upstream: string): Promise<void> {
 		const index = this._branches.findIndex(b => b.name === name);
 		if (index === -1) {
@@ -239,7 +252,7 @@ export class MockRepository implements Repository {
 		this._state.remotes.splice(index, 1);
 	}
 
-	async fetch(arg0?: string | undefined | any, ref?: string | undefined, depth?: number | undefined): Promise<void> {
+	async fetch(arg0?: string | undefined | FetchOptions, ref?: string | undefined, depth?: number | undefined): Promise<void> {
 		let remoteName: string | undefined;
 		if (typeof arg0 === 'object') {
 			remoteName = arg0.remote;
@@ -249,7 +262,9 @@ export class MockRepository implements Repository {
 			remoteName = arg0;
 		}
 
-		const index = this._expectedFetches.findIndex(f => f.remoteName === remoteName && f.ref === ref && f.depth === depth);
+		const index = this._expectedFetches.findIndex(
+			f => f.remoteName === remoteName && f.ref === ref && f.depth === depth,
+		);
 		if (index === -1) {
 			throw new Error(`Unexpected fetch(${remoteName}, ${ref}, ${depth})`);
 		}
@@ -301,5 +316,13 @@ export class MockRepository implements Repository {
 
 	expectPush(remoteName?: string, branchName?: string, setUpstream?: boolean) {
 		this._expectedPushes.push({ remoteName, branchName, setUpstream });
+	}
+
+	merge(ref: string): Promise<void> {
+		return Promise.reject(new Error(`Unexpected merge(${ref})`));
+	}
+
+	mergeAbort(): Promise<void> {
+		return Promise.reject(new Error(`Unexpected mergeAbort`));
 	}
 }
