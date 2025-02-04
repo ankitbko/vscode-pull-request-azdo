@@ -1,13 +1,13 @@
 import * as azdev from 'azure-devops-node-api';
 import { IRequestHandler } from 'azure-devops-node-api/interfaces/common/VsoBaseInterfaces';
 import { Identity } from 'azure-devops-node-api/interfaces/IdentitiesInterfaces';
+import * as jwt from 'jsonwebtoken';
 import * as vscode from 'vscode';
 import { IGit } from '../api/api';
 import Logger from '../common/logger';
 import { parseRepositoryRemotes, Remote } from '../common/remote';
 import { ITelemetry } from '../common/telemetry';
 import { SETTINGS_NAMESPACE } from '../constants';
-import { REMOTES_SETTING } from './folderRepositoryManager';
 
 
 const PROJECT_SETTINGS = 'projectName';
@@ -26,7 +26,7 @@ export class Azdo {
 	public connection: azdev.WebApi;
 	public authenticatedUser: Identity | undefined;
 
-	constructor(public orgUrl: string, public projectName: string, token: string, isPatTokenAuth: boolean = false) {
+	constructor(public orgUrl: string, public projectName: string, private token: string, private isPatTokenAuth: boolean = false) {
 		if (isPatTokenAuth) {
 			this._authHandler = azdev.getPersonalAccessTokenHandler(token, true);
 		} else {
@@ -37,6 +37,27 @@ export class Azdo {
 
 	public getNewWebApiClient(orgUrl: string): azdev.WebApi {
 		return new azdev.WebApi(orgUrl, this._authHandler);
+	}
+
+	public isTokenExpired(): boolean {
+		try {
+			if (this.isPatTokenAuth) {
+				return false;
+			}
+
+			const decodedToken = jwt.decode(this.token) as { exp: number };
+			if (!decodedToken || !decodedToken.exp) {
+				return true;
+			}
+			const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
+			const currentTime = Date.now();
+			const bufferTime = 60 * 1000; // 1 minute in milliseconds
+
+			return currentTime >= (expirationTime - bufferTime);
+		} catch (error) {
+			// If there's an error decoding the token, consider it expired
+			return true;
+		}
 	}
 }
 
@@ -80,7 +101,7 @@ export class CredentialStore implements vscode.Disposable {
 	}
 
 	public isAuthenticated(): boolean {
-		return !!this._azdoAPI;
+		return !!this._azdoAPI && !this._azdoAPI.isTokenExpired();
 	}
 
 	public getHub(): Azdo | undefined {
