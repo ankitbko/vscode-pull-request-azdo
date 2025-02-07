@@ -1,5 +1,6 @@
 import { BasePromptElementProps, PromptElement, UserMessage } from '@vscode/prompt-tsx';
 import { ChatContext } from 'vscode';
+import { PullRequestModel } from '../../../azdo/pullRequestModel';
 import { History } from '../../core/prompts/chat.history';
 import FileContext, { IFilesToInclude } from '../../core/prompts/file.contents';
 
@@ -7,9 +8,7 @@ export interface ExplainPromptData extends BasePromptElementProps {
 	history: ChatContext['history'];
 	userQuery: string;
 	referencedFiles: IFilesToInclude[];
-	description: string;
-	allFilesChanged: string[];
-	referencedWorkItems: string[];
+	pr: PullRequestModel;
 }
 
 export default class ExplainPrompt extends PromptElement<ExplainPromptData> {
@@ -34,7 +33,7 @@ export default class ExplainPrompt extends PromptElement<ExplainPromptData> {
 				</UserMessage>
 				<History history={this.props.history} passPriority older={0} newer={80} />
 				<UserMessage priority={90}>{this.props.userQuery}</UserMessage>
-				<UserMessage priority={70}>{this.props.description}</UserMessage>
+				<UserMessage priority={70}>{this.props.pr.item.description}</UserMessage>
 				<FileContext priority={70} flexGrow={1} files={this.props.referencedFiles} />
 			</>
 		);

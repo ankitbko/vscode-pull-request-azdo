@@ -2,6 +2,7 @@ import {
 	CancellationToken,
 	ChatContext,
 	ChatRequest,
+	ChatResponseMarkdownPart,
 	ChatResponseStream,
 	ChatResponseTurn,
 	LanguageModelChatMessage,
@@ -14,6 +15,7 @@ import IChatCommand, { CommandContext } from '../../core/chat.command';
 import executePrompt from '../../core/chat.prompt';
 import { resolveAllReferences } from '../../core/chat.references';
 import { IChatResult } from '../../core/chat.result';
+import { PRContext } from '../../core/prompts/pr.context';
 import ExplainPrompt, { ExplainPromptData } from './explain.prompt';
 
 /**
@@ -30,16 +32,41 @@ export default class implements IChatCommand {
 		stream: ChatResponseStream,
 		token: CancellationToken, // todo: use it in executePrompt
 	): Promise<IChatResult> {
-		const repoId = this.context.stateManager.getValue<string | null>('azdopr.lastReferencedRepo');
-		const prId = this.context.stateManager.getValue<string | null>('azdopr.lastReferencedPR');
+		// Try find direct reference to a PR in the prompt
+		const prContext = new PRContext(this.context);
+		let pr = await prContext.getPR(request, context, stream, token);
+
+		if (!pr) {
+			// Try determining the PR from the user's visible code
+			const userVisibleCodeReference = request.references.find(x => x.modelDescription === "User's current visible code");
+			if (userVisibleCodeReference) {
+				const activeFileUri = (userVisibleCodeReference.value as { uri: Uri }).uri;
+				const activePrManager = this.context.repositoriesManager.getManagerForFile(activeFileUri);
+				pr = activePrManager?.activePullRequest;
+			}
+		}
+
+		if (!pr) {
+			const response = new ChatResponseMarkdownPart(
+				"I'm sorry, I couldn't find the pull request you are referring to. Please mention it like this: #12345",
+			);
+			stream.push(response);
+			return { metadata: { command: this.name } };
+		}
+
+		const formattedDate = pr.item.creationDate?.toLocaleDateString('en-US', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+		});
 
 
+		const response = new ChatResponseMarkdownPart(
+			`We're talking about the pull request '__${pr.item.title}__' (**#${pr.getPullRequestId()}**) raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`,
+		);
 
-		const folderManagers = this.context.repositoriesManager.folderManagers;
-		const pullRequestsResult = await Promise.all(folderManagers.map(f => f.getPullRequests(PRType.AllActive)));
-		const allActivePrs = pullRequestsResult.flatMap(t => t.items);
-
-		Logger.appendLine(`Chat > Explain > allActivePrs: ${allActivePrs.length}`, this.name);
+		stream.push(response);
 
 		// initialize the messages array with the prompt
 		const messages = [LanguageModelChatMessage.User(request.prompt)];
@@ -55,28 +82,13 @@ export default class implements IChatCommand {
 		// File changes in PR: allActivePrs[0].getFileChangesInfo()
 		// allActivePrs[0].getWorkItemRefs
 
-		const activeFileUri = (request.references.filter(x => x.modelDescription === "User's current visible code")[0]
-			.value as { uri: Uri }).uri;
-
-		const activePrManager = this.context.repositoriesManager.getManagerForFile(activeFileUri);
-
-		if (!activePrManager) {
-			// We delta!
-			return { metadata: { command: this.name } };
-		}
-
-		// TODO: This is never set, why? Is it set only if I have "local pull request branch set"? But somehow I cannot even select it (0 nodes under this tree root).
-		const activePR = activePrManager.activePullRequest;
-
 		const referencedTextFiles = await resolveAllReferences(request.references);
 
 		const data: ExplainPromptData = {
 			history: context.history,
-			description: activePR?.item.description ?? '',
+			pr: pr,
 			userQuery: request.prompt,
-			referencedFiles: referencedTextFiles,
-			allFilesChanged: ['file1', 'file2'],
-			referencedWorkItems: ['wk1', 'wk2'],
+			referencedFiles: referencedTextFiles
 		};
 
 		await executePrompt(

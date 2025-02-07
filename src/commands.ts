@@ -795,7 +795,7 @@ export function registerCommands(
 			const repoId = await pullRequestModel.azdoRepository.getRepositoryId();
 			stateManager.setValue('azdopr.lastReferencedRepo', repoId);
 			stateManager.setValue('azdopr.lastReferencedPR', pullRequestModel.getPullRequestId());
-			const message = `@azdopr /explain `;
+			const message = `@azdopr /explain #${pullRequestModel.getPullRequestId()}`;
 			await vscode.commands.executeCommand('workbench.action.chat.open', {
 				query: message,
 				isPartialQuery: true, // make it false to auto send the message.
