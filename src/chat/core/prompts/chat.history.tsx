@@ -37,7 +37,7 @@ export class History extends PromptElement<IHistoryProps> {
 		return (
 			<>
 				<HistoryMessages history={this.props.history.slice(0, -2)} priority={this.props.older} />
-				<HistoryMessages history={this.props.history.slice(0, -2)} priority={this.props.newer} />
+				<HistoryMessages history={this.props.history.slice(-2)} priority={this.props.newer} />
 			</>
 		);
 	}

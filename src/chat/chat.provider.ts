@@ -4,6 +4,7 @@ import { StateManager } from './chat.state';
 import ExplainCommand from './commands/explain/explain.command';
 import FeedCommand from './commands/feed/feed.command';
 import HighlightCommand from './commands/highlight/highlight.command';
+import ReviewCommand from './commands/review/review.command';
 import IChatCommand from './core/chat.command';
 
 export interface IChatProvider {
@@ -32,6 +33,8 @@ export class ChatProvider implements IChatProvider {
 				return new ExplainCommand(commandContext);
 			case 'feed':
 				return new FeedCommand(commandContext);
+			case 'review':
+				return new ReviewCommand(commandContext);
 			default:
 				throw new Error(`Command ${commandName} not found`);
 		}
