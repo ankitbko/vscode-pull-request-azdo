@@ -1,5 +1,14 @@
-import { CancellationToken, ChatContext, ChatRequest, ChatResponseStream, Uri } from 'vscode';
+import {
+	CancellationToken,
+	ChatContext,
+	ChatRequest,
+	ChatResponseStream,
+	ChatResponseTurn,
+	LanguageModelChatMessage,
+	Uri,
+} from 'vscode';
 import { PRType } from '../../../azdo/interface';
+import { PullRequestModel } from '../../../azdo/pullRequestModel';
 import Logger from '../../../common/logger';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
 import executePrompt from '../../core/chat.prompt';
@@ -21,17 +30,24 @@ export default class implements IChatCommand {
 		stream: ChatResponseStream,
 		token: CancellationToken, // todo: use it in executePrompt
 	): Promise<IChatResult> {
+		const repoId = this.context.stateManager.getValue<string | null>('azdopr.lastReferencedRepo');
+		const prId = this.context.stateManager.getValue<string | null>('azdopr.lastReferencedPR');
+
+
+
 		const folderManagers = this.context.repositoriesManager.folderManagers;
 		const pullRequestsResult = await Promise.all(folderManagers.map(f => f.getPullRequests(PRType.AllActive)));
 		const allActivePrs = pullRequestsResult.flatMap(t => t.items);
 
 		Logger.appendLine(`Chat > Explain > allActivePrs: ${allActivePrs.length}`, this.name);
 
+		// initialize the messages array with the prompt
+		const messages = [LanguageModelChatMessage.User(request.prompt)];
+		const previousMessages = context.history.filter(h => h instanceof ChatResponseTurn);
+
 		// Active Pull Request (pull request raised from current branch): folderManagers[0].activePullRequest
 		// Alternate way: folderManagers[0].azdoRepositories[0].getAllActivePullRequests()
 		// PR on id: folderManagers[0].azdoRepositories[0].getPullRequest(1234)
-
-
 
 		// Single PR specific functionalities
 		// allActivePrs[0].getAllActiveThreadsBetweenAllIterations()
@@ -39,7 +55,8 @@ export default class implements IChatCommand {
 		// File changes in PR: allActivePrs[0].getFileChangesInfo()
 		// allActivePrs[0].getWorkItemRefs
 
-		const activeFileUri = (request.references.filter(x => x.modelDescription === "User's current visible code")[0].value as { uri: Uri }).uri;
+		const activeFileUri = (request.references.filter(x => x.modelDescription === "User's current visible code")[0]
+			.value as { uri: Uri }).uri;
 
 		const activePrManager = this.context.repositoriesManager.getManagerForFile(activeFileUri);
 
@@ -62,12 +79,15 @@ export default class implements IChatCommand {
 			referencedWorkItems: ['wk1', 'wk2'],
 		};
 
-		await executePrompt({
-			prompt: ExplainPrompt,
-			data: data,
-			model: request.model,
-			stream,
-		}, token);
+		await executePrompt(
+			{
+				prompt: ExplainPrompt,
+				data: data,
+				model: request.model,
+				stream,
+			},
+			token,
+		);
 
 		return { metadata: { command: this.name } };
 	}
