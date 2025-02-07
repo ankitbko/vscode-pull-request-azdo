@@ -8,9 +8,6 @@ import {
 	LanguageModelChatMessage,
 	Uri,
 } from 'vscode';
-import { PRType } from '../../../azdo/interface';
-import { PullRequestModel } from '../../../azdo/pullRequestModel';
-import Logger from '../../../common/logger';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
 import executePrompt from '../../core/chat.prompt';
 import { resolveAllReferences } from '../../core/chat.references';
@@ -63,7 +60,9 @@ export default class implements IChatCommand {
 
 
 		const response = new ChatResponseMarkdownPart(
-			`We're talking about the pull request '__${pr.item.title}__' (**#${pr.getPullRequestId()}**) raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`,
+			`We're talking about the pull request '__${pr.item.title}__' (**[#${pr.getPullRequestId()}](${
+				pr.url
+			})**) raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`,
 		);
 
 		stream.push(response);
