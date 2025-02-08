@@ -2,12 +2,14 @@ import {
 	CancellationToken,
 	ChatContext,
 	ChatRequest,
+	ChatResponseFileTree,
 	ChatResponseMarkdownPart,
 	ChatResponseStream,
 	ChatResponseTurn,
 	LanguageModelChatMessage,
 	Uri,
 } from 'vscode';
+import { removeLeadingSlash } from '../../../azdo/utils';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
 import executePrompt from '../../core/chat.prompt';
 import { resolveAllReferences } from '../../core/chat.references';
@@ -43,7 +45,9 @@ export default class implements IChatCommand {
 			}
 		}
 
-		if (!pr) {
+		const folderManager = this.context.repositoriesManager.getManagerForPullRequestModel(pr);
+
+		if (!pr || !folderManager) {
 			const response = new ChatResponseMarkdownPart(
 				"I'm sorry, I couldn't find the pull request you are referring to. Please mention it like this: #12345",
 			);
@@ -58,14 +62,29 @@ export default class implements IChatCommand {
 			year: 'numeric',
 		});
 
-
-		const response = new ChatResponseMarkdownPart(
-			`We're talking about the pull request '__${pr.item.title}__' (**[#${pr.getPullRequestId()}](${
+		const header = new ChatResponseMarkdownPart(
+			`# Pull request '__${pr.item.title}__' (**[#${pr.getPullRequestId()}](${
 				pr.url
 			})**) raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`,
 		);
 
-		stream.push(response);
+		stream.push(header);
+
+		const filesHeader = new ChatResponseMarkdownPart(
+			`## Files changed`
+		);
+
+		stream.push(filesHeader);
+
+		const fileChangesInfo = await pr.getFileChangesInfo();
+
+		const tree: ChatResponseFileTree[] = fileChangesInfo.map(f => {
+			return { name: removeLeadingSlash(f.filename) };
+		});
+		stream.filetree(tree, folderManager.repository.rootUri);
+
+
+
 
 		// initialize the messages array with the prompt
 		const messages = [LanguageModelChatMessage.User(request.prompt)];
@@ -86,8 +105,9 @@ export default class implements IChatCommand {
 		const data: ExplainPromptData = {
 			history: context.history,
 			pr: pr,
+			folderManager: folderManager,
 			userQuery: request.prompt,
-			referencedFiles: referencedTextFiles
+			referencedFiles: referencedTextFiles,
 		};
 
 		await executePrompt(
