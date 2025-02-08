@@ -18,6 +18,7 @@ import { RepositoriesManager } from './azdo/repositoriesManager';
 import { AzdoUserManager } from './azdo/userManager';
 import { getPositionFromThread } from './azdo/utils';
 import { AzdoWorkItem } from './azdo/workItem';
+import { StateManager } from './chat/chat.state';
 import { CommentReply, resolveCommentHandler } from './commentHandlerResolver';
 import { DiffChangeType } from './common/diffHunk';
 import { getZeroBased } from './common/diffPositionMapping';
@@ -789,7 +790,12 @@ export function registerCommands(
 				return;
 			}
 
-			const message = `@azdopr /highlight Please provide insights for Pull Request #${pullRequestModel.getPullRequestId()} titled "${pullRequestModel.item.title}".`;
+			const stateManager = new StateManager(context);
+
+			const repoId = await pullRequestModel.azdoRepository.getRepositoryId();
+			stateManager.setValue('azdopr.lastReferencedRepo', repoId);
+			stateManager.setValue('azdopr.lastReferencedPR', pullRequestModel.getPullRequestId());
+			const message = `@azdopr /explain #${pullRequestModel.getPullRequestId()}`;
 			await vscode.commands.executeCommand('workbench.action.chat.open', {
 				query: message,
 				isPartialQuery: true, // make it false to auto send the message.
