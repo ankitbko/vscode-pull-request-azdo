@@ -218,3 +218,13 @@ export enum DiffBaseConfig {
 	head = 'head',
 	mergeBase = 'mergebase',
 }
+
+export interface LmReviewComment {
+	lineNumber: number;
+	reviewComment: string;
+}
+
+export interface LmReview {
+	comments: LmReviewComment[];
+	description: string;
+}
