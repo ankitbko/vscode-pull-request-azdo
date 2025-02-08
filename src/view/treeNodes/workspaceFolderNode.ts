@@ -18,7 +18,7 @@ export interface IQueryInfo {
 
 export class WorkspaceFolderNode extends TreeNode implements vscode.TreeItem {
 	public collapsibleState: vscode.TreeItemCollapsibleState;
-	public iconPath?: { light: string | vscode.Uri; dark: string | vscode.Uri };
+	public iconPath?: string | { light: vscode.Uri; dark: vscode.Uri };
 
 	constructor(
 		parent: TreeNodeParent,
