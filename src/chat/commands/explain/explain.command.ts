@@ -62,16 +62,19 @@ export default class implements IChatCommand {
 			year: 'numeric',
 		});
 
-		const header = new ChatResponseMarkdownPart(
-			`# Pull request '__${pr.item.title}__' (**[#${pr.getPullRequestId()}](${
+		stream.push(new ChatResponseMarkdownPart(
+			`# Pull request **[#${pr.getPullRequestId()}](${
 				pr.url
-			})**) raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`,
-		);
+			})**)`
+		));
 
-		stream.push(header);
+		stream.push(new ChatResponseMarkdownPart(`\n- Title: ${pr.item.title}`));
+		stream.push(new ChatResponseMarkdownPart(
+			`\n- Raised by ${pr.item.createdBy?.displayName} on ${formattedDate}.`
+		));
 
 		const filesHeader = new ChatResponseMarkdownPart(
-			`## Files changed`
+			`\n## Files changed`
 		);
 
 		stream.push(filesHeader);
