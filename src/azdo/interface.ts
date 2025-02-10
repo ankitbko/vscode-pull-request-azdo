@@ -11,6 +11,7 @@ import {
 	VersionControlChangeType,
 } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import { DiffHunk } from '../common/diffHunk';
+import { GitChangeType } from '../common/file';
 
 export enum PRType {
 	Query,
@@ -153,6 +154,17 @@ export interface IRawFileChange {
 	patch?: string;
 	diffHunk?: DiffHunk[];
 }
+
+
+export interface IFileChangeNode {
+	status: GitChangeType;
+	sha: string;
+	blobUrl: string;
+	fileName: string;
+	previousFileName: string;
+
+}
+
 
 export interface IPullRequestsPagingOptions {
 	fetchNextPage: boolean;

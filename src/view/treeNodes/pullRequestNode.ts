@@ -7,7 +7,7 @@ import * as path from 'path';
 import { Comment, GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../../azdo/folderRepositoryManager';
-import { CommentPermissions, CommentWithPermissions } from '../../azdo/interface';
+import { CommentPermissions, CommentWithPermissions, IFileChangeNode } from '../../azdo/interface';
 import { PullRequestModel } from '../../azdo/pullRequestModel';
 import { getPositionFromThread, removeLeadingSlash } from '../../azdo/utils';
 import { mapThreadsToBase } from '../../common/commentingRanges';
@@ -18,7 +18,7 @@ import { GitChangeType, SlimFileChange } from '../../common/file';
 import Logger from '../../common/logger';
 import { fromPRUri, toPRUriAzdo } from '../../common/uri';
 import { SETTINGS_NAMESPACE } from '../../constants';
-import { getInMemPRContentProvider } from '../inMemPRContentProvider';
+import { getInMemPRContentProvider, provideDocumentContentForChangeModel } from '../inMemPRContentProvider';
 import { DescriptionNode } from './descriptionNode';
 import { DirectoryTreeNode } from './directoryTreeNode';
 import { GitFileChangeNode, InMemFileChangeNode, RemoteFileChangeNode } from './fileChangeNode';
@@ -376,69 +376,9 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 			return '';
 		}
 
-		if (
-			(params.isBase && fileChange.status === GitChangeType.ADD) ||
-			(!params.isBase && fileChange.status === GitChangeType.DELETE)
-		) {
-			return '';
-		}
+		const isFileRemote = fileChange instanceof RemoteFileChangeNode || fileChange.isPartial;
 
-		if (fileChange instanceof RemoteFileChangeNode || fileChange.isPartial) {
-			try {
-				return this.pullRequestModel.getFile(fileChange.sha!);
-			} catch (e) {
-				Logger.appendLine(`PR> Fetching file content failed: ${e}`);
-				vscode.window
-					.showWarningMessage(
-						'Opening this file locally failed. Would you like to view it on GitHub?',
-						'Open in GitHub',
-					)
-					.then(result => {
-						if (result === 'Open in GitHub') {
-							vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(fileChange.blobUrl));
-						}
-					});
-				return '';
-			}
-		}
-
-		if (fileChange instanceof InMemFileChangeNode) {
-			if (fileChange.status === GitChangeType.ADD) {
-				const originalFileName = fileChange.fileName;
-				const originalFilePath = vscode.Uri.joinPath(this._folderReposManager.repository.rootUri, originalFileName!);
-				const commit = params.headCommit;
-				const originalContent = await this._folderReposManager.repository.show(commit, originalFilePath.fsPath);
-				return originalContent;
-			} else if (fileChange.status === GitChangeType.RENAME) {
-				let commit = params.baseCommit;
-				let originalFileName = fileChange.previousFileName;
-				if (!params.isBase) {
-					commit = params.headCommit;
-					originalFileName = fileChange.fileName;
-				}
-
-				const originalFilePath = vscode.Uri.joinPath(this._folderReposManager.repository.rootUri, originalFileName!);
-				const originalContent = await this._folderReposManager.repository.show(commit, originalFilePath.fsPath);
-				return originalContent;
-			} else {
-				const originalFileName =
-					fileChange.status === GitChangeType.DELETE ? fileChange.previousFileName : fileChange.fileName;
-				const originalFilePath = vscode.Uri.joinPath(this._folderReposManager.repository.rootUri, originalFileName!);
-				let commit = params.baseCommit;
-				if (!params.isBase) {
-					commit = params.headCommit;
-				}
-				const originalContent = await this._folderReposManager.repository.show(commit, originalFilePath.fsPath);
-				return originalContent;
-				// if (params.isBase) {
-				// 	return originalContent;
-				// } else {
-				// 	return getModifiedContentFromDiffHunkAzdo(originalContent, fileChange.diffHunks);
-				// }
-			}
-		}
-
-		return '';
+		return provideDocumentContentForChangeModel(params, this.pullRequestModel, this._folderReposManager, fileChange as IFileChangeNode, isFileRemote);
 	}
 
 	// #endregion

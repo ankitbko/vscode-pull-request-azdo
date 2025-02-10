@@ -25,10 +25,11 @@ import * as PersistentState from './common/persistentState';
 import { Resource } from './common/resources';
 import { handler as uriHandler } from './common/uri';
 import { onceEvent } from './common/utils';
-import { EXTENSION_ID, SETTINGS_NAMESPACE } from './constants';
+import { EXTENSION_ID, SETTINGS_NAMESPACE, URI_SCHEME_PR } from './constants';
 import { registerBuiltinGitProvider, registerLiveShareGitProvider } from './gitProviders/api';
 import { MockGitProvider } from './gitProviders/mockGitProvider';
 import { FileTypeDecorationProvider } from './view/fileTypeDecorationProvider';
+import { getInMemPRContentProvider } from './view/inMemPRContentProvider';
 import { PullRequestChangesTreeDataProvider } from './view/prChangesTreeDataProvider';
 import { PullRequestsTreeDataProvider } from './view/prsTreeDataProvider';
 import { ReviewManager } from './view/reviewManager';
@@ -224,6 +225,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 
 	const prTree = new PullRequestsTreeDataProvider(telemetry);
 	context.subscriptions.push(prTree);
+
+	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(URI_SCHEME_PR, getInMemPRContentProvider()));
 
 	if (apiImpl.repositories.length > 0) {
 		await init(context, apiImpl, credentialStore, apiImpl.repositories, prTree, liveshareApiPromise);
