@@ -41,7 +41,7 @@ export default class implements IChatCommand {
 		}));
 
 		const pr = pullRequestsResult.filter(p => p !== null).pop();
-		const folderManager = folderManagers.pop();
+		const folderManager = folderManagers[folderManagers.length - 1];
 		if (!pr) {
 			// TODO: Handle pr not found.
 			return { metadata: { command: 'foo' } };
