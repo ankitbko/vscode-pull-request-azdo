@@ -309,7 +309,7 @@ export async function parseDiffAzdo(
 		const review = reviews[i];
 		const gitChangeType = getGitChangeTypeFromVersionControlChangeType(review.status);
 
-		if (review.diffHunk === undefined) {
+		if (review.diffHunks === undefined) {
 			fileChanges.push(
 				new SlimFileChange(
 					parentCommit,
@@ -346,7 +346,7 @@ export async function parseDiffAzdo(
 				break;
 		}
 
-		const diffHunks = review.diffHunk ?? [];
+		const diffHunks = review.diffHunks ?? [];
 		const isPartial = !originalFileExist && gitChangeType !== GitChangeType.ADD;
 		fileChanges.push(
 			new InMemFileChange(

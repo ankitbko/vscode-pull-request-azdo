@@ -10,6 +10,7 @@ import {
 	GitStatusState,
 	VersionControlChangeType,
 } from 'azure-devops-node-api/interfaces/GitInterfaces';
+import { Uri } from 'vscode';
 import { DiffHunk } from '../common/diffHunk';
 import { GitChangeType } from '../common/file';
 
@@ -152,17 +153,22 @@ export interface IRawFileChange {
 	raw_url: string;
 	blob_url: string;
 	patch?: string;
-	diffHunk?: DiffHunk[];
+	diffHunks?: DiffHunk[];
 }
 
 
 export interface IFileChangeNode {
 	status: GitChangeType;
-	sha: string;
+	sha?: string;
 	blobUrl: string;
 	fileName: string;
 	previousFileName: string;
+	diffHunks?: DiffHunk[];
+}
 
+export interface IFileChangeNodeWithUri extends IFileChangeNode {
+	filePath: Uri;
+	parentFilePath: Uri;
 }
 
 

@@ -11,6 +11,11 @@ import { Repository } from '../api/api';
 import { PullRequestModel as AzdoPullRequestModel } from '../azdo/pullRequestModel';
 import { URI_SCHEME_PR, URI_SCHEME_RESOURCE, URI_SCHEME_REVIEW } from '../constants';
 import { GitChangeType } from './file';
+import { getGitChangeTypeFromVersionControlChangeType } from './diffHunk';
+import { removeLeadingSlash } from '../azdo/utils';
+import { VersionControlChangeType } from 'azure-devops-node-api/interfaces/GitInterfaces';
+import { FolderRepositoryManager } from '../azdo/folderRepositoryManager';
+import { IRawFileChange } from '../azdo/interface';
 
 export interface ReviewUriParams {
 	path: string;
@@ -167,3 +172,30 @@ class UriEventHandler extends EventEmitter<Uri> implements UriHandler {
 }
 
 export const handler = new UriEventHandler();
+
+export function createPRUris(pr: AzdoPullRequestModel, folderManager: FolderRepositoryManager, fileChange: IRawFileChange) {
+	let headUri, baseUri: Uri;
+	const headCommit = pr.head!.sha;
+	const fileName = fileChange.status === VersionControlChangeType.Delete ? fileChange.previous_filename! : fileChange.filename;
+	const parentFileName = fileChange.previous_filename ?? '';
+	headUri = toPRUriAzdo(
+		Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(fileName))),
+		pr,
+		pr.base.sha,
+		headCommit,
+		fileName,
+		false,
+		getGitChangeTypeFromVersionControlChangeType(fileChange.status)
+	);
+	baseUri = toPRUriAzdo(
+		Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(parentFileName))),
+		pr,
+		pr.base.sha,
+		headCommit,
+		parentFileName,
+		true,
+		getGitChangeTypeFromVersionControlChangeType(fileChange.status)
+	);
+
+	return { headUri, baseUri };
+}

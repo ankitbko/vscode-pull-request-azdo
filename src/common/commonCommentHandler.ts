@@ -6,13 +6,13 @@
 import { Comment, CommentThreadStatus, GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../azdo/folderRepositoryManager';
+import { IFileChangeNode, IFileChangeNodeWithUri } from '../azdo/interface';
 import { GHPRComment, GHPRCommentThread, TemporaryComment } from '../azdo/prComment';
 import { PullRequestModel } from '../azdo/pullRequestModel';
 import { getCommentThreadStatusKeys, updateCommentThreadLabel } from '../azdo/utils';
 import { URI_SCHEME_PR, URI_SCHEME_REVIEW } from '../constants';
 import {
 	GitFileChangeNode,
-	gitFileChangeNodeFilter,
 	InMemFileChangeNode,
 	RemoteFileChangeNode,
 } from '../view/treeNodes/fileChangeNode';
@@ -27,7 +27,7 @@ export class CommonCommentHandler {
 		thread: GHPRCommentThread,
 		input: string,
 		inDraft: boolean,
-		getFileChanges: (isOutdated: boolean) => Promise<(InMemFileChangeNode | RemoteFileChangeNode | GitFileChangeNode)[]>,
+		getFileChanges: (isOutdated: boolean) => Promise<IFileChangeNodeWithUri[]>,
 		addCommentToCache: (thread: GHPRCommentThread, fileName: string) => Promise<void>,
 	): Promise<GitPullRequestCommentThread | undefined> {
 		const hasExistingComments = thread.comments.length;
@@ -83,11 +83,11 @@ export class CommonCommentHandler {
 	public async editComment(
 		thread: GHPRCommentThread,
 		comment: GHPRComment,
-		getFileChanges: (isOutdated: boolean) => Promise<(InMemFileChangeNode | RemoteFileChangeNode | GitFileChangeNode)[]>,
+		getFileChanges: (isOutdated: boolean) => Promise<(IFileChangeNodeWithUri)[]>,
 	): Promise<Comment | undefined> {
 		const temporaryCommentId = this.optimisticallyEditComment(thread, comment);
 		try {
-			const fileChange = await this.findMatchingFileNode(thread.uri, getFileChanges);
+			const fileChange = await this.findMatchingFileNode(thread.uri, getFileChanges) as (InMemFileChangeNode | GitFileChangeNode);
 			const rawComment = await this.pullRequestModel.editThread(
 				comment.body instanceof vscode.MarkdownString ? comment.body.value : comment.body,
 				thread.threadId,
@@ -195,8 +195,8 @@ export class CommonCommentHandler {
 
 	private async findMatchingFileNode(
 		uri: vscode.Uri,
-		getFileChanges: (isOutdated: boolean) => Promise<(InMemFileChangeNode | RemoteFileChangeNode | GitFileChangeNode)[]>,
-	): Promise<GitFileChangeNode | InMemFileChangeNode> {
+		getFileChanges: (isOutdated: boolean) => Promise<(IFileChangeNodeWithUri)[]>,
+	): Promise<IFileChangeNodeWithUri> {
 		let fileName: string;
 		let isOutdated = false;
 		if (uri.scheme === URI_SCHEME_REVIEW) {
@@ -211,10 +211,7 @@ export class CommonCommentHandler {
 
 		const fileChangesToSearch = await getFileChanges(isOutdated);
 
-		const matchedFile = (uri.scheme === URI_SCHEME_REVIEW
-			? gitFileChangeNodeFilter(fileChangesToSearch)
-			: fileChangesToSearch
-		).find(fileChange => {
+		const matchedFile = fileChangesToSearch.find(fileChange => {
 			if (uri.scheme === URI_SCHEME_REVIEW || uri.scheme === URI_SCHEME_PR) {
 				return fileChange.fileName === fileName;
 			} else {
@@ -236,7 +233,7 @@ export class CommonCommentHandler {
 	private async createNewThread(
 		thread: GHPRCommentThread,
 		input: string,
-		fileChange: InMemFileChangeNode | GitFileChangeNode,
+		fileChange: IFileChangeNodeWithUri,
 		isLeft: boolean,
 	): Promise<GitPullRequestCommentThread | undefined> {
 		const rawComment = await this.pullRequestModel.createThread(input, {
@@ -273,7 +270,8 @@ export class CommonCommentHandler {
 	async provideCommentingRanges(
 		document: vscode.TextDocument,
 		token: vscode.CancellationToken,
-		getFileChanges: () => Promise<(RemoteFileChangeNode | InMemFileChangeNode | GitFileChangeNode)[]>,
+		getFileChanges: () => Promise<IFileChangeNode[]>,
+		fileChanges?: IFileChangeNode[] | undefined,
 	): Promise<vscode.Range[] | undefined> {
 		if (document.uri.scheme === URI_SCHEME_PR) {
 			const params = fromPRUri(document.uri);
@@ -281,8 +279,9 @@ export class CommonCommentHandler {
 			if (!params || params.prNumber !== this.pullRequestModel.getPullRequestId()) {
 				return;
 			}
+			const changes = !fileChanges ? await getFileChanges() : fileChanges;
 
-			const fileChange = (await getFileChanges()).find(change => change.fileName === params.fileName);
+			const fileChange = changes.find(change => change.fileName === params.fileName);
 
 			if (!fileChange || fileChange instanceof RemoteFileChangeNode) {
 				return;

@@ -7,6 +7,7 @@ import * as path from 'path';
 import { GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../../azdo/folderRepositoryManager';
+import { IFileChangeNodeWithUri } from '../../azdo/interface';
 import { PullRequestModel } from '../../azdo/pullRequestModel';
 import { removeLeadingSlash } from '../../azdo/utils';
 import { ViewedState } from '../../common/comment';
@@ -219,7 +220,7 @@ export class FileChangeNode extends TreeNode implements vscode.TreeItem {
 /**
  * File change node whose content is stored in memory and resolved when being revealed.
  */
-export class InMemFileChangeNode extends FileChangeNode implements vscode.TreeItem {
+export class InMemFileChangeNode extends FileChangeNode implements vscode.TreeItem, IFileChangeNodeWithUri {
 	constructor(
 		public readonly parent: TreeNodeParent,
 		public readonly pullRequest: PullRequestModel,
@@ -247,12 +248,13 @@ export class InMemFileChangeNode extends FileChangeNode implements vscode.TreeIt
 /**
  * File change node whose content can be resolved by git commit sha.
  */
-export class GitFileChangeNode extends FileChangeNode implements vscode.TreeItem {
+export class GitFileChangeNode extends FileChangeNode implements vscode.TreeItem, IFileChangeNodeWithUri {
 	constructor(
 		public readonly parent: TreeNodeParent,
 		public readonly pullRequest: PullRequestModel,
 		public readonly status: GitChangeType,
 		public readonly fileName: string,
+		public readonly previousFileName: string | undefined,
 		public readonly blobUrl: string | undefined,
 		public readonly filePath: vscode.Uri,
 		public readonly parentFilePath: vscode.Uri,

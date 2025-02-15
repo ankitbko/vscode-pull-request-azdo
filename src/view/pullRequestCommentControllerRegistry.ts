@@ -6,12 +6,12 @@
 
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../azdo/folderRepositoryManager';
-import { GHPRComment, GHPRCommentThread } from '../azdo/prComment';
+import { IFileChangeNodeWithUri } from '../azdo/interface';
+import { GHPRComment } from '../azdo/prComment';
 import { PullRequestModel } from '../azdo/pullRequestModel';
 import { CommentReactionHandler } from '../azdo/utils';
 import { fromPRUri } from '../common/uri';
 import { PullRequestCommentController } from './pullRequestCommentController';
-import { GitFileChangeNode, InMemFileChangeNode, RemoteFileChangeNode } from './treeNodes/fileChangeNode';
 
 interface PullRequestCommentHandlerInfo {
 	handler: PullRequestCommentController & CommentReactionHandler;
@@ -69,7 +69,7 @@ export class PRCommentControllerRegistry implements vscode.CommentingRangeProvid
 		prNumber: number,
 		pullRequestModel: PullRequestModel,
 		folderRepositoryManager: FolderRepositoryManager,
-		getFileChanges: () => Promise<(RemoteFileChangeNode | InMemFileChangeNode | GitFileChangeNode)[]>,
+		getFileChanges: () => Promise<IFileChangeNodeWithUri[]>,
 	): vscode.Disposable {
 		if (this._prCommentHandlers[prNumber]) {
 			this._prCommentHandlers[prNumber].refCount += 1;

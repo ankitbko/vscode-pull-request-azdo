@@ -7,6 +7,7 @@ import * as path from 'path';
 import { v4 as uuid } from 'uuid';
 import * as vscode from 'vscode';
 import { FolderRepositoryManager } from '../azdo/folderRepositoryManager';
+import { IFileChangeNodeWithUri } from '../azdo/interface';
 import { GHPRComment, GHPRCommentThread, TemporaryComment } from '../azdo/prComment';
 import { PullRequestModel, ReviewThreadChangeEvent } from '../azdo/pullRequestModel';
 import { CommentReactionHandler, createVSCodeCommentThread, updateCommentReviewState, updateThread } from '../azdo/utils';
@@ -16,7 +17,6 @@ import { CommonCommentHandler } from '../common/commonCommentHandler';
 import { fromPRUri } from '../common/uri';
 import { groupBy } from '../common/utils';
 import { URI_SCHEME_PR } from '../constants';
-import { GitFileChangeNode, InMemFileChangeNode, RemoteFileChangeNode } from './treeNodes/fileChangeNode';
 
 export class PullRequestCommentController implements CommentHandler, CommentReactionHandler {
 	static ID = 'PullRequestCommentController';
@@ -36,7 +36,7 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 		private pullRequestModel: PullRequestModel,
 		private _folderReposManager: FolderRepositoryManager,
 		private _commentController: vscode.CommentController,
-		private getFileChanges: () => Promise<(RemoteFileChangeNode | InMemFileChangeNode | GitFileChangeNode)[]>,
+		private getFileChanges: () => Promise<(IFileChangeNodeWithUri)[]>,
 	) {
 		this._commentHandlerId = uuid();
 		this._commonCommentHandler = new CommonCommentHandler(pullRequestModel, _folderReposManager);
@@ -231,6 +231,9 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 					);
 				}
 			}
+			if (!newThread) {
+				return;
+			}
 
 			const key = this.getCommentThreadCacheKey(thread.path, thread.diffSide === DiffSide.LEFT);
 			if (this._commentThreadCache[key]) {
@@ -242,7 +245,7 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 
 		e.changed.forEach(thread => {
 			const key = this.getCommentThreadCacheKey(thread.path, thread.diffSide === DiffSide.LEFT);
-			const index = this._commentThreadCache[key].findIndex(t => t.threadId === thread.id);
+			const index = this._commentThreadCache[key]?.findIndex(t => t.threadId === thread.id);
 			if (index > -1) {
 				const matchingThread = this._commentThreadCache[key][index];
 				updateThread(
@@ -256,7 +259,7 @@ export class PullRequestCommentController implements CommentHandler, CommentReac
 
 		e.removed.forEach(async thread => {
 			const key = this.getCommentThreadCacheKey(thread.path, thread.diffSide === DiffSide.LEFT);
-			const index = this._commentThreadCache[key].findIndex(t => t.threadId === thread.id);
+			const index = this._commentThreadCache[key]?.findIndex(t => t.threadId === thread.id);
 			if (index > -1) {
 				const matchingThread = this._commentThreadCache[key][index];
 				this._commentThreadCache[key].splice(index, 1);
