@@ -436,6 +436,7 @@ export class ReviewManager {
 				pr,
 				change.status,
 				fileName,
+				change.previousFileName,
 				change.blobUrl,
 				modifiedFileUri,
 				originalFileUri,
@@ -493,6 +494,7 @@ export class ReviewManager {
 						pr,
 						GitChangeType.MODIFY,
 						fileName,
+						undefined,
 						undefined,
 						// TODO need to pass commit id which is not available
 						// toReviewUri(uri, fileName, undefined, oldComments[0].originalCommitId!, true, { base: false }, this._repository.rootUri),

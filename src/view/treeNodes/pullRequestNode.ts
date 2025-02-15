@@ -11,14 +11,13 @@ import { CommentPermissions, CommentWithPermissions, IFileChangeNode } from '../
 import { PullRequestModel } from '../../azdo/pullRequestModel';
 import { getPositionFromThread, removeLeadingSlash } from '../../azdo/utils';
 import { mapThreadsToBase } from '../../common/commentingRanges';
-import { CommonCommentHandler } from '../../common/commonCommentHandler';
-import { parseDiffAzdo } from '../../common/diffHunk';
 import { getZeroBased } from '../../common/diffPositionMapping';
 import { GitChangeType, SlimFileChange } from '../../common/file';
 import Logger from '../../common/logger';
 import { fromPRUri, toPRUriAzdo } from '../../common/uri';
 import { SETTINGS_NAMESPACE } from '../../constants';
 import { getInMemPRContentProvider, provideDocumentContentForChangeModel } from '../inMemPRContentProvider';
+import { PullRequestCommentingRangeProvider } from '../pullRequestCommentingRangeProvider';
 import { DescriptionNode } from './descriptionNode';
 import { DirectoryTreeNode } from './directoryTreeNode';
 import { GitFileChangeNode, InMemFileChangeNode, RemoteFileChangeNode } from './fileChangeNode';
@@ -78,7 +77,7 @@ export function getDocumentThreadDatas(
 	return threads;
 }
 
-export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
+export class PRNode extends TreeNode {
 	static ID = 'PRNode';
 
 	private _fileChanges: (RemoteFileChangeNode | InMemFileChangeNode)[] | undefined;
@@ -89,7 +88,7 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 	private _inMemPRContentProvider?: vscode.Disposable;
 
 	private _command: vscode.Command;
-	private _commonCommentHandler: CommonCommentHandler;
+	public commentingRangeProvider: vscode.CommentingRangeProvider;
 
 	public get command(): vscode.Command {
 		return this._command;
@@ -106,7 +105,7 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 		private _isLocal: boolean,
 	) {
 		super();
-		this._commonCommentHandler = new CommonCommentHandler(pullRequestModel, _folderReposManager);
+		this.commentingRangeProvider = new PullRequestCommentingRangeProvider(pullRequestModel, _folderReposManager, async () => await this.getFileChanges());
 	}
 
 	// #region Tree
@@ -187,7 +186,7 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 		this._disposables.push(
 			this.pullRequestModel.azdoRepository.commentsHandler!.registerCommentingRangeProvider(
 				this.pullRequestModel.getPullRequestId(),
-				this,
+				this.commentingRangeProvider,
 			),
 		);
 
@@ -214,21 +213,12 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 	}
 
 	private async resolveFileChanges(): Promise<(RemoteFileChangeNode | InMemFileChangeNode)[]> {
-		if (!this.pullRequestModel.isResolved()) {
+		const rawChanges = await this.pullRequestModel.getFileDiffChanges(this._folderReposManager.repository);
+		if (rawChanges.length === 0) {
 			return [];
 		}
 
 		const comments = (await this.pullRequestModel.getAllActiveThreadsBetweenAllIterations()) ?? [];
-		const data = await this.pullRequestModel.getFileChangesInfo();
-
-		// TODO Which is the correct diff to show from source HEAD - merge-base or target HEAD
-		// Merge base is set as part of getPullRequestFileChangesInfo
-		const mergeBase = this.pullRequestModel.getDiffTarget();
-		if (!mergeBase) {
-			return [];
-		}
-
-		const rawChanges = await parseDiffAzdo(data, this._folderReposManager.repository, mergeBase);
 
 		return rawChanges.map(change => {
 			const headCommit = this.pullRequestModel.head!.sha;
@@ -350,17 +340,6 @@ export class PRNode extends TreeNode implements vscode.CommentingRangeProvider {
 	}
 
 	// #endregion
-
-	async provideCommentingRanges(
-		document: vscode.TextDocument,
-		token: vscode.CancellationToken,
-	): Promise<vscode.Range[] | undefined> {
-		return await this._commonCommentHandler.provideCommentingRanges(
-			document,
-			token,
-			async () => await this.getFileChanges(),
-		);
-	}
 
 	// #region Document Content Provider
 	private async provideDocumentContent(uri: vscode.Uri): Promise<string> {

@@ -7,28 +7,31 @@
 import * as pathLib from 'path';
 import { GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
+import { Repository } from './api/api';
 import { GitErrorCodes } from './api/api1';
 import { CredentialStore } from './azdo/credentials';
 import { FolderRepositoryManager } from './azdo/folderRepositoryManager';
-import { PullRequest } from './azdo/interface';
+import { IFileChangeNodeWithUri, IRawFileChange, LmReviewComment, PullRequest } from './azdo/interface';
 import { GHPRComment, GHPRCommentThread, TemporaryComment } from './azdo/prComment';
 import { PullRequestModel } from './azdo/pullRequestModel';
 import { PullRequestOverviewPanel } from './azdo/pullRequestOverview';
 import { RepositoriesManager } from './azdo/repositoriesManager';
 import { AzdoUserManager } from './azdo/userManager';
-import { getPositionFromThread } from './azdo/utils';
+import { convertRawFileChangeToFileChangeNode, getPositionFromThread, removeLeadingSlash } from './azdo/utils';
 import { AzdoWorkItem } from './azdo/workItem';
 import { StateManager } from './chat/chat.state';
 import { CommentReply, resolveCommentHandler } from './commentHandlerResolver';
 import { DiffChangeType } from './common/diffHunk';
 import { getZeroBased } from './common/diffPositionMapping';
-import { GitChangeType } from './common/file';
+import { GitChangeType, InMemFileChange } from './common/file';
 import Logger from './common/logger';
 import { ITelemetry } from './common/telemetry';
-import { asImageDataURI, fromReviewUri, ReviewUriParams } from './common/uri';
+import { asImageDataURI, fromPRUri, fromReviewUri, ReviewUriParams, toPRUriAzdo } from './common/uri';
 import { formatError } from './common/utils';
-import { SETTINGS_NAMESPACE } from './constants';
+import { SETTINGS_NAMESPACE, URI_SCHEME_PR, URI_SCHEME_REVIEW } from './constants';
+import { getInMemPRContentProvider, provideDocumentContentForChangeModel } from './view/inMemPRContentProvider';
 import { PullRequestsTreeDataProvider } from './view/prsTreeDataProvider';
+import { PullRequestCommentingRangeProvider } from './view/pullRequestCommentingRangeProvider';
 import { ReviewManager } from './view/reviewManager';
 import { CommitNode } from './view/treeNodes/commitNode';
 import { DescriptionNode } from './view/treeNodes/descriptionNode';
@@ -799,6 +802,122 @@ export function registerCommands(
 			await vscode.commands.executeCommand('workbench.action.chat.open', {
 				query: message,
 				isPartialQuery: true, // make it false to auto send the message.
+			});
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('azdopr.lmAddReviewComment', async (pr: PullRequestModel, folderManager: FolderRepositoryManager, headUri: vscode.Uri, baseUri: vscode.Uri, file: IRawFileChange, comment: LmReviewComment) => {
+			vscode.window.withProgress({
+				location: vscode.ProgressLocation.Notification,
+				title: 'AzDO: Adding review comment',
+				cancellable: true
+			}, async (progress, token) => {
+				const inMemProvider = getInMemPRContentProvider().registerTextDocumentContentProvider(pr.getPullRequestId(), async (uri: vscode.Uri) => {
+					const params = fromPRUri(uri);
+					if (!params) {
+						return '';
+					}
+
+					return await provideDocumentContentForChangeModel(params, pr, folderManager, convertRawFileChangeToFileChangeNode(file), false);
+				});
+				context.subscriptions.push(inMemProvider);
+
+				progress.report({ message: 'Getting latest changes...', increment: 0});
+				const getFileChanges = async (pr: PullRequestModel, repository: Repository) => {
+					const diffs = await pr.getFileDiffChanges(repository);
+					const changes: IFileChangeNodeWithUri[] = diffs.map(diff => {
+						return {
+							fileName: diff.fileName,
+							status: diff.status,
+							previousFileName: diff.previousFileName,
+							sha: diff.fileSHA,
+							blobUrl: diff.blobUrl,
+							diffHunks: diff instanceof InMemFileChange ? diff.diffHunks ?? [] : undefined,
+							filePath: toPRUriAzdo(
+								vscode.Uri.file(
+									pathLib.resolve(repository.rootUri.fsPath, removeLeadingSlash(diff.fileName)),
+								),
+								pr,
+								diff.baseCommit,
+								pr.head!.sha,
+								diff.fileName,
+								false,
+								diff.status,
+							),
+							parentFilePath: toPRUriAzdo(
+								vscode.Uri.file(
+									pathLib.resolve(
+										repository.rootUri.fsPath,
+										removeLeadingSlash(diff.previousFileName),
+									),
+								),
+								pr,
+								diff.baseCommit,
+								pr.head!.sha,
+								diff.previousFileName,
+								true,
+								diff.status,
+							),
+						};
+					});
+					return changes;
+				};
+
+				const fileChanges = await getFileChanges(pr, folderManager.repository);
+
+				await pr.azdoRepository.ensureCommentsController();
+				const commentingRangeProvider = new PullRequestCommentingRangeProvider(
+					pr,
+					folderManager,
+					async () => await getFileChanges(pr, folderManager.repository),
+					fileChanges);
+
+				const commentRangeProviderDispose = pr.azdoRepository.commentsHandler!.registerCommentingRangeProvider(
+					pr.getPullRequestId(),
+					commentingRangeProvider,
+				);
+
+				context.subscriptions.push(
+					pr.azdoRepository.commentsHandler!.registerCommentController(
+						pr.getPullRequestId(),
+						pr,
+						folderManager,
+						async () => await getFileChanges(pr, folderManager.repository),
+					),
+				);
+
+				progress.report({ message: 'Creating thread...', increment: 50});
+				await pr.createThread(comment.reviewComment, {
+					filePath: file.filename,
+					line: comment.lineNumber,
+					isLeft: false,
+					endOffset: 1,
+					startOffset: 1
+				});
+
+				progress.report({ message: 'Getting latest comments - almost there...', increment: 30});
+				await pr.getAllActiveThreadsBetweenAllIterations();
+
+				if (headUri.scheme === URI_SCHEME_REVIEW || headUri.scheme === 'file') {
+					await vscode.commands.executeCommand('vscode.open', headUri);
+				} else if (headUri.scheme === URI_SCHEME_PR) {
+					const options: vscode.TextDocumentShowOptions = {
+						preserveFocus: true,
+						// selection: range,
+					};
+
+					const pathFragment = file.filename.split('/');
+					await vscode.commands.executeCommand(
+						'vscode.diff',
+						baseUri,
+						headUri,
+						`${pathFragment[pathFragment.length - 1]} (Pull Request ${pr.getPullRequestId()})`,
+						options,
+					);
+				}
+				progress.report({ message: 'Done', increment: 20});
+				commentRangeProviderDispose.dispose();
 			});
 		})
 	);

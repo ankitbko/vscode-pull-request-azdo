@@ -1,18 +1,12 @@
-import * as path from 'path';
 import { renderPrompt } from '@vscode/prompt-tsx';
-import { VersionControlChangeType } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
-import { IRawFileChange, LmReview, PRType } from '../../../azdo/interface';
-import { PullRequestModel } from '../../../azdo/pullRequestModel';
+import { LmReview } from '../../../azdo/interface';
 import { removeLeadingSlash } from '../../../azdo/utils';
-import { GitChangeType } from '../../../common/file';
 import Logger from '../../../common/logger';
-import { createUris, toPRUriAzdo, toReviewUri } from '../../../common/uri';
+import { createPRUris } from '../../../common/uri';
 import IChatCommand, { CommandContext } from '../../core/chat.command';
 import { IChatResult } from '../../core/chat.result';
 import ReviewPrompt, { ReviewPromptData } from './review.prompt';
-import { getGitChangeTypeFromVersionControlChangeType } from '../../../common/diffHunk';
-import { FolderRepositoryManager } from '../../../azdo/folderRepositoryManager';
 
 /**
  * Automatically highlights the important parts of the currently reviewed pull request.
@@ -58,7 +52,7 @@ export default class implements IChatCommand {
 		const allComments = [];
 		for (const fileChange of fileChanges) {
 
-			const { headUri, baseUri} = createUris(pr, folderManager, fileChange);
+			const { headUri, baseUri} = createPRUris(pr, folderManager, fileChange);
 
 			stream.markdown(`## Reviewing file `);
 			stream.anchor(vscode.Uri.file(folderManager.repository.rootUri.fsPath + fileChange.filename), 'Reviewing File');

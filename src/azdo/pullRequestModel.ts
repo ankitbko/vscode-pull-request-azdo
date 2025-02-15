@@ -24,9 +24,10 @@ import {
 } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import equals from 'fast-deep-equal';
 import * as vscode from 'vscode';
+import { Repository } from '../api/api';
 import { IReviewThread, ViewedState } from '../common/comment';
 import { parseDiffAzdo } from '../common/diffHunk';
-import { GitChangeType } from '../common/file';
+import { GitChangeType, InMemFileChange, SlimFileChange } from '../common/file';
 import { GitHubRef } from '../common/githubRef';
 import Logger from '../common/logger';
 import { Remote } from '../common/remote';
@@ -794,7 +795,7 @@ export class PullRequestModel implements IPullRequestModel {
 			// flatten
 			const change_map = changes.find(c => c.item?.path === (diff.path!.length > 0 ? diff.path : diff.originalPath));
 			result.push({
-				diffHunk: getDiffHunkFromFileDiff(diff),
+				diffHunks: getDiffHunkFromFileDiff(diff),
 				filename: diff.path!,
 				previous_filename: diff.originalPath!,
 				blob_url: change_map?.item?.url,
@@ -913,6 +914,23 @@ export class PullRequestModel implements IPullRequestModel {
 				return params;
 			});
 		return diff_params;
+	}
+
+	async getFileDiffChanges(repository: Repository): Promise<(InMemFileChange | SlimFileChange)[]> {
+		if (!this.isResolved()) {
+			return [];
+		}
+
+		const data = await this.getFileChangesInfo();
+
+		// TODO Which is the correct diff to show from source HEAD - merge-base or target HEAD
+		// Merge base is set as part of getPullRequestFileChangesInfo
+		const mergeBase = this.getDiffTarget();
+		if (!mergeBase) {
+			return [];
+		}
+
+		return await parseDiffAzdo(data, repository, mergeBase);
 	}
 
 	static async openDiffFromComment(

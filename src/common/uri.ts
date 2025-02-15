@@ -173,49 +173,29 @@ class UriEventHandler extends EventEmitter<Uri> implements UriHandler {
 
 export const handler = new UriEventHandler();
 
-export function createUris(pr: AzdoPullRequestModel, folderManager: FolderRepositoryManager, fileChange: IRawFileChange) {
+export function createPRUris(pr: AzdoPullRequestModel, folderManager: FolderRepositoryManager, fileChange: IRawFileChange) {
 	let headUri, baseUri: Uri;
-	if (!pr.equals(folderManager.activePullRequest)) {
-		const headCommit = pr.head!.sha;
-		const fileName = fileChange.status === VersionControlChangeType.Delete ? fileChange.previous_filename! : fileChange.filename;
-		const parentFileName = fileChange.previous_filename ?? '';
-		headUri = toPRUriAzdo(
-			Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(fileName))),
-			pr,
-			pr.base.sha,
-			headCommit,
-			fileName,
-			false,
-			getGitChangeTypeFromVersionControlChangeType(fileChange.status)
-		);
-		baseUri = toPRUriAzdo(
-			Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(parentFileName))),
-			pr,
-			pr.base.sha,
-			headCommit,
-			parentFileName,
-			true,
-			getGitChangeTypeFromVersionControlChangeType(fileChange.status)
-		);
-	} else {
-		const uri = Uri.file(
-			pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(fileChange.filename))
-		);
+	const headCommit = pr.head!.sha;
+	const fileName = fileChange.status === VersionControlChangeType.Delete ? fileChange.previous_filename! : fileChange.filename;
+	const parentFileName = fileChange.previous_filename ?? '';
+	headUri = toPRUriAzdo(
+		Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(fileName))),
+		pr,
+		pr.base.sha,
+		headCommit,
+		fileName,
+		false,
+		getGitChangeTypeFromVersionControlChangeType(fileChange.status)
+	);
+	baseUri = toPRUriAzdo(
+		Uri.file(pathUtils.resolve(folderManager.repository.rootUri.fsPath, removeLeadingSlash(parentFileName))),
+		pr,
+		pr.base.sha,
+		headCommit,
+		parentFileName,
+		true,
+		getGitChangeTypeFromVersionControlChangeType(fileChange.status)
+	);
 
-		headUri =
-			fileChange.status === VersionControlChangeType.Delete
-				? toReviewUri(uri, undefined, undefined, '', false, { base: false }, folderManager.repository.rootUri)
-				: uri;
-
-		baseUri = toReviewUri(
-			uri,
-			getGitChangeTypeFromVersionControlChangeType(fileChange.status) === GitChangeType.RENAME ? fileChange.previous_filename : fileChange.filename,
-			undefined,
-			getGitChangeTypeFromVersionControlChangeType(fileChange.status) === GitChangeType.ADD ? '' : pr.base.sha,
-			false,
-			{ base: true },
-			folderManager.repository.rootUri
-		);
-	}
 	return { headUri, baseUri };
 }
