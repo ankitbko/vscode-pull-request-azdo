@@ -178,9 +178,9 @@ export class ReviewCommentController
 
 				await Promise.all(threadPromises);
 
-				this._workspaceFileChangeCommentThreads[path] = rightSideCommentThreads;
-				this._reviewSchemeFileChangeCommentThreads[path] = leftSideThreads;
-				this._obsoleteFileChangeCommentThreads[path] = outdatedCommentThreads;
+				this._workspaceFileChangeCommentThreads[removeLeadingSlash(path)] = rightSideCommentThreads;
+				this._reviewSchemeFileChangeCommentThreads[removeLeadingSlash(path)] = leftSideThreads;
+				this._obsoleteFileChangeCommentThreads[removeLeadingSlash(path)] = outdatedCommentThreads;
 			}
 		}
 	}
@@ -219,10 +219,10 @@ export class ReviewCommentController
 				);
 				workspaceDocuments.forEach(editor => {
 					const fileName = this.gitRelativeRootPath(editor.document.uri.path);
-					const threadsForEditor = this._workspaceFileChangeCommentThreads[fileName] || [];
+					const threadsForEditor = this._workspaceFileChangeCommentThreads[removeLeadingSlash(fileName)] || [];
 					// If the editor has no view column, assume it is part of a diff editor and expand the comments. Otherwise, collapse them.
 					const isEmbedded = !editor.viewColumn;
-					this._workspaceFileChangeCommentThreads[fileName] = threadsForEditor.map(thread => {
+					this._workspaceFileChangeCommentThreads[removeLeadingSlash(fileName)] = threadsForEditor.map(thread => {
 						thread.collapsibleState = isEmbedded
 							? vscode.CommentThreadCollapsibleState.Expanded
 							: vscode.CommentThreadCollapsibleState.Collapsed;
@@ -281,7 +281,7 @@ export class ReviewCommentController
 							// newThread = this.createOutdatedCommentThread(path, thread);
 						} else {
 							if (thread.diffSide === DiffSide.RIGHT) {
-								newThread = await this.createWorkspaceCommentThread(uri, path, thread);
+								newThread = await this.createWorkspaceCommentThread(uri, removeLeadingSlash(path), thread);
 							} else {
 								newThread = this.createReviewCommentThread(uri, path, thread);
 							}
@@ -294,10 +294,10 @@ export class ReviewCommentController
 						? this._workspaceFileChangeCommentThreads
 						: this._reviewSchemeFileChangeCommentThreads;
 
-					if (threadMap[path]) {
-						threadMap[path].push(newThread);
+					if (threadMap[removeLeadingSlash(path)]) {
+						threadMap[removeLeadingSlash(path)].push(newThread);
 					} else {
-						threadMap[path] = [newThread];
+						threadMap[removeLeadingSlash(path)] = [newThread];
 					}
 				});
 
@@ -308,9 +308,9 @@ export class ReviewCommentController
 						? this._workspaceFileChangeCommentThreads
 						: this._reviewSchemeFileChangeCommentThreads;
 
-					const index = threadMap[thread.path].findIndex(t => t.threadId === thread.id);
+					const index = threadMap[removeLeadingSlash(thread.path)]?.findIndex(t => t.threadId === thread.id);
 					if (index > -1) {
-						const matchingThread = threadMap[thread.path][index];
+						const matchingThread = threadMap[removeLeadingSlash(thread.path)][index];
 						matchingThread.comments = thread.thread.comments
 							.filter(c => !c.isDeleted)
 							.map(c => new GHPRComment(c, this._getCommentPermissions(c), matchingThread));
@@ -324,10 +324,10 @@ export class ReviewCommentController
 						? this._workspaceFileChangeCommentThreads
 						: this._reviewSchemeFileChangeCommentThreads;
 
-					const index = threadMap[thread.path].findIndex(t => t.threadId === thread.id);
+					const index = threadMap[removeLeadingSlash(thread.path)]?.findIndex(t => t.threadId === thread.id);
 					if (index > -1) {
-						const matchingThread = threadMap[thread.path][index];
-						threadMap[thread.path].splice(index, 1);
+						const matchingThread = threadMap[removeLeadingSlash(thread.path)][index];
+						threadMap[removeLeadingSlash(thread.path)].splice(index, 1);
 						matchingThread.dispose();
 					}
 				});

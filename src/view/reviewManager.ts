@@ -184,7 +184,7 @@ export class ReviewManager {
 				await this.updateComments();
 			}
 			this.pollForStatusChange();
-		}, 1000 * 60 * 5);
+		}, 1000 * 60 * 1);
 	}
 
 	private async checkBranchUpToDate(pr: IResolvedPullRequestModel): Promise<void> {
@@ -232,113 +232,116 @@ export class ReviewManager {
 	}
 
 	private async validateState(silent: boolean) {
-		Logger.appendLine('Review> Validating state...');
-		await this._folderRepoManager.updateRepositories(silent);
+		try {
+			Logger.appendLine('Review> Validating state...');
+			await this._folderRepoManager.updateRepositories(silent);
 
-		if (!this._repository.state.HEAD) {
-			this.clear(true);
-			return;
-		}
-
-		const branch = this._repository.state.HEAD;
-		let matchingPullRequestMetadata = await this._folderRepoManager.getMatchingPullRequestMetadataForBranch();
-
-		if (!matchingPullRequestMetadata) {
-			Logger.appendLine(`Review> no matching pull request metadata found for current branch ${branch.name}`);
-			const metadataFromGithub = await this._folderRepoManager.getMatchingPullRequestMetadataFromGitHub();
-			if (metadataFromGithub) {
-				PullRequestGitHelper.associateBranchWithPullRequest(this._repository, metadataFromGithub.model, branch.name!);
-				matchingPullRequestMetadata = metadataFromGithub;
+			if (!this._repository.state.HEAD) {
+				this.clear(true);
+				return;
 			}
-		}
 
-		if (!matchingPullRequestMetadata) {
-			Logger.appendLine(`Review> no matching pull request metadata found on GitHub for current branch ${branch.name}`);
-			this.clear(true);
-			return;
-		}
+			const branch = this._repository.state.HEAD;
+			let matchingPullRequestMetadata = await this._folderRepoManager.getMatchingPullRequestMetadataForBranch();
 
-		const hasPushedChanges = branch.commit !== this._lastCommitSha && branch.ahead === 0 && branch.behind === 0;
-		if (this._prNumber === matchingPullRequestMetadata.prNumber && !hasPushedChanges) {
-			vscode.commands.executeCommand('azdopr.refreshList');
-			return;
-		}
-
-		const remote = branch.upstream ? branch.upstream.remote : null;
-		if (!remote) {
-			Logger.appendLine(`Review> current branch ${this._repository.state.HEAD.name} hasn't setup remote yet`);
-			this.clear(true);
-			return;
-		}
-
-		// we switch to another PR, let's clean up first.
-		Logger.appendLine(
-			`Review> current branch ${this._repository.state.HEAD.name} is associated with pull request #${matchingPullRequestMetadata.prNumber}`,
-		);
-		this.clear(false);
-		this._prNumber = matchingPullRequestMetadata.prNumber;
-		this._lastCommitSha = undefined;
-
-		const { owner, repositoryName } = matchingPullRequestMetadata;
-		Logger.appendLine('Review> Resolving pull request');
-		const pr = await this._folderRepoManager.resolvePullRequest(
-			owner,
-			repositoryName,
-			matchingPullRequestMetadata.prNumber,
-		);
-		if (!pr || !pr.isResolved()) {
-			this._prNumber = undefined;
-			Logger.appendLine('Review> This PR is no longer valid');
-			return;
-		}
-
-		this._folderRepoManager.activePullRequest = pr;
-		this._lastCommitSha = pr.head.sha;
-
-		if (this._isFirstLoad) {
-			this._isFirstLoad = false;
-			this.checkBranchUpToDate(pr);
-		}
-
-		Logger.appendLine('Review> Fetching pull request data');
-		await this.getPullRequestData(pr);
-		await this.changesInPrDataProvider.addPrToView(this._folderRepoManager, pr, this._localFileChanges, this._comments);
-
-		Logger.appendLine(`Review> register comments provider`);
-		await this.registerCommentController(pr);
-
-		if (!this._webviewViewProvider) {
-			this._webviewViewProvider = new PullRequestViewProvider(this._context.extensionUri, this._folderRepoManager, pr);
-			this._context.subscriptions.push(
-				vscode.window.registerWebviewViewProvider(PullRequestViewProvider.viewType, this._webviewViewProvider),
-			);
-		} else {
-			this._webviewViewProvider.updatePullRequest(pr);
-		}
-
-		this.statusBarItem.text = `$(git-branch) Pull Request #${this._prNumber}`;
-		this.statusBarItem.command = {
-			command: 'azdopr.openDescription',
-			title: 'View Pull Request Description',
-			arguments: [pr],
-		};
-		Logger.appendLine(`Review> display pull request status bar indicator and refresh pull request tree view.`);
-		this.statusBarItem.show();
-		vscode.commands.executeCommand('azdopr.refreshList');
-		if (!silent && this._context.workspaceState.get(FOCUS_REVIEW_MODE)) {
-			if (this.localFileChanges.length > 0) {
-				let fileChangeToShow: GitFileChangeNode | undefined;
-				for (const fileChange of this.localFileChanges) {
-					if (fileChange.status === GitChangeType.MODIFY) {
-						fileChangeToShow = fileChange;
-						break;
-					}
+			if (!matchingPullRequestMetadata) {
+				Logger.appendLine(`Review> no matching pull request metadata found for current branch ${branch.name}`);
+				const metadataFromGithub = await this._folderRepoManager.getMatchingPullRequestMetadataFromGitHub();
+				if (metadataFromGithub) {
+					PullRequestGitHelper.associateBranchWithPullRequest(this._repository, metadataFromGithub.model, branch.name!);
+					matchingPullRequestMetadata = metadataFromGithub;
 				}
-				fileChangeToShow = fileChangeToShow ?? this.localFileChanges[0];
-				await fileChangeToShow.openDiff(this._folderRepoManager);
 			}
+
+			if (!matchingPullRequestMetadata) {
+				Logger.appendLine(`Review> no matching pull request metadata found on GitHub for current branch ${branch.name}`);
+				this.clear(true);
+				return;
+			}
+
+			const hasPushedChanges = branch.commit !== this._lastCommitSha && branch.ahead === 0 && branch.behind === 0;
+			if (this._prNumber === matchingPullRequestMetadata.prNumber && !hasPushedChanges) {
+				vscode.commands.executeCommand('azdopr.refreshList');
+				return;
+			}
+
+			const remote = branch.upstream ? branch.upstream.remote : null;
+			if (!remote) {
+				Logger.appendLine(`Review> current branch ${this._repository.state.HEAD.name} hasn't setup remote yet`);
+				this.clear(true);
+				return;
+			}
+
+			// we switch to another PR, let's clean up first.
+			Logger.appendLine(
+				`Review> current branch ${this._repository.state.HEAD.name} is associated with pull request #${matchingPullRequestMetadata.prNumber}`,
+			);
+			this.clear(false);
+			this._prNumber = matchingPullRequestMetadata.prNumber;
+			this._lastCommitSha = undefined;
+
+			const { owner, repositoryName } = matchingPullRequestMetadata;
+			Logger.appendLine('Review> Resolving pull request');
+			const pr = await this._folderRepoManager.resolvePullRequest(
+				owner,
+				repositoryName,
+				matchingPullRequestMetadata.prNumber,
+			);
+			if (!pr || !pr.isResolved()) {
+				this._prNumber = undefined;
+				Logger.appendLine('Review> This PR is no longer valid');
+				return;
+			}
+
+			this._folderRepoManager.activePullRequest = pr;
+			this._lastCommitSha = pr.head.sha;
+
+			if (this._isFirstLoad) {
+				this._isFirstLoad = false;
+				this.checkBranchUpToDate(pr);
+			}
+
+			Logger.appendLine('Review> Fetching pull request data');
+			await this.getPullRequestData(pr);
+			await this.changesInPrDataProvider.addPrToView(this._folderRepoManager, pr, this._localFileChanges, this._comments);
+
+			Logger.appendLine(`Review> register comments provider`);
+			await this.registerCommentController(pr);
+
+			if (!this._webviewViewProvider) {
+				this._webviewViewProvider = new PullRequestViewProvider(this._context.extensionUri, this._folderRepoManager, pr);
+				this._context.subscriptions.push(
+					vscode.window.registerWebviewViewProvider(PullRequestViewProvider.viewType, this._webviewViewProvider),
+				);
+			} else {
+				this._webviewViewProvider.updatePullRequest(pr);
+			}
+
+			this.statusBarItem.text = `$(git-branch) Pull Request #${this._prNumber}`;
+			this.statusBarItem.command = {
+				command: 'azdopr.openDescription',
+				title: 'View Pull Request Description',
+				arguments: [pr],
+			};
+			Logger.appendLine(`Review> display pull request status bar indicator and refresh pull request tree view.`);
+			this.statusBarItem.show();
+			vscode.commands.executeCommand('azdopr.refreshList');
+			if (!silent && this._context.workspaceState.get(FOCUS_REVIEW_MODE)) {
+				if (this.localFileChanges.length > 0) {
+					let fileChangeToShow: GitFileChangeNode | undefined;
+					for (const fileChange of this.localFileChanges) {
+						if (fileChange.status === GitChangeType.MODIFY) {
+							fileChangeToShow = fileChange;
+							break;
+						}
+					}
+					fileChangeToShow = fileChangeToShow ?? this.localFileChanges[0];
+					await fileChangeToShow.openDiff(this._folderRepoManager);
+				}
+			}
+		} finally {
+			this._validateStatusInProgress = undefined;
 		}
-		this._validateStatusInProgress = undefined;
 	}
 
 	public async updateComments(): Promise<void> {
@@ -361,11 +364,12 @@ export class ReviewManager {
 			return;
 		}
 
-		const pr = await this._folderRepoManager.resolvePullRequest(
-			matchingPullRequestMetadata.owner,
-			matchingPullRequestMetadata.repositoryName,
-			this._prNumber,
-		);
+		// const pr = await this._folderRepoManager.resolvePullRequest(
+		// 	matchingPullRequestMetadata.owner,
+		// 	matchingPullRequestMetadata.repositoryName,
+		// 	this._prNumber,
+		// );
+		const pr = this._folderRepoManager.activePullRequest;
 
 		if (!pr || !pr.isResolved()) {
 			Logger.appendLine('Review> This PR is no longer valid');
