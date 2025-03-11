@@ -355,3 +355,6 @@ preview-src
 .eslintcache.browser
 *.tsbuildinfo
 .vscode-test-web
+*.orig
+*.re
+*.patch
