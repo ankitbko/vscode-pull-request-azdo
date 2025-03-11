@@ -14,12 +14,12 @@ import { Identity } from 'azure-devops-node-api/interfaces/IdentitiesInterfaces'
 import * as vscode from 'vscode';
 import { Repository } from '../api/api';
 import { GitApiImpl } from '../api/api1';
-import { DiffSide, IReviewThread, Reaction } from '../common/comment';
-import { DiffChangeType, DiffHunk, DiffLine } from '../common/diffHunk';
+import { DiffSide, Reaction } from '../common/comment';
+import { DiffChangeType, DiffHunk, DiffLine, getGitChangeTypeFromVersionControlChangeType } from '../common/diffHunk';
 import { Resource } from '../common/resources';
 import { ThreadData } from '../view/treeNodes/pullRequestNode';
 import { AzdoRepository } from './azdoRepository';
-import { IAccount, IGitHubRef, PullRequest } from './interface';
+import { IAccount, IFileChangeNode, IGitHubRef, IRawFileChange, PullRequest } from './interface';
 import { GHPRComment, GHPRCommentThread } from './prComment';
 
 export interface CommentReactionHandler {
@@ -416,4 +416,16 @@ export function isCommentResolved(status: CommentThreadStatus): boolean {
 		status === CommentThreadStatus.Fixed ||
 		status === CommentThreadStatus.WontFix
 	);
+}
+
+export function convertRawFileChangeToFileChangeNode(fileChange: IRawFileChange): IFileChangeNode {
+	return {
+		blobUrl: fileChange.blob_url,
+		status:  getGitChangeTypeFromVersionControlChangeType(fileChange.status),
+		fileName: fileChange.filename,
+		previousFileName: fileChange.previous_filename,
+		sha: fileChange.file_sha,
+		diffHunks: fileChange.diffHunks,
+		previousFileSha: fileChange.previous_file_sha
+	};
 }

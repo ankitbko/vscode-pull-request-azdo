@@ -4,8 +4,9 @@
 		"forceConsistentCasingInFileNames": true,
 		"incremental": true,
 		"isolatedModules": false,
-		"jsx": "react",
-		"lib": ["es2019"],
+		"lib": [
+			"es2019"
+		],
 		"module": "esnext",
 		"moduleResolution": "node",
 		"noFallthroughCasesInSwitch": true,
@@ -27,6 +28,12 @@
 			"./src/@types"
 		],
 	},
-	"include": ["src/**/*", "webviews/**/*"],
-	"exclude": ["node_modules", ".vscode-test"]
+	"include": [
+		"src/**/*",
+		"webviews/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		".vscode-test"
+	]
 }

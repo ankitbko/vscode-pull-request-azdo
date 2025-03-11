@@ -14,7 +14,7 @@ import {
 import { createSandbox, SinonSandbox } from 'sinon';
 import { createMock } from 'ts-auto-mock';
 import * as vscode from 'vscode';
-import { Repository } from '../../api/api';
+import { IGit, Repository } from '../../api/api';
 import { GitApiImpl } from '../../api/api1';
 import { AzdoRepository } from '../../azdo/azdoRepository';
 import { CredentialStore } from '../../azdo/credentials';
@@ -38,6 +38,7 @@ import { MockCommandRegistry } from '../mocks/mockCommandRegistry';
 import { createFakeSecretStorage } from '../mocks/mockExtensionContext';
 import { MockRepository } from '../mocks/mockRepository';
 import { MockTelemetry } from '../mocks/mockTelemetry';
+import { MockGitProvider } from "../../gitProviders/mockGitProvider"
 
 const protocol = new Protocol('https://github.com/github/test.git');
 const remote = new Remote('test', 'github/test', protocol);
@@ -76,20 +77,25 @@ describe('ReviewCommentController', function () {
 	let manager: FolderRepositoryManager;
 	let activePullRequest: PullRequestModel;
 	let fileReviewedStatusService;
+	let gitImpl: GitApiImpl;
 
 	beforeEach(async function () {
 		sinon = createSandbox();
 		MockCommandRegistry.install(sinon);
 
-		telemetry = new MockTelemetry();
-		credentialStore = new CredentialStore(telemetry, createFakeSecretStorage());
-
+		gitImpl = new GitApiImpl();
 		repository = new MockRepository();
-		repository.addRemote('origin', 'git@dev.azure.com.com:aaa/aaa/bbb_git/bbb');
+		repository.addRemote('origin', 'git@dev.azure.com.com:aaa/aaa/bbb/_git/bbb');
+
+		const mockGitProvider = new MockGitProvider(repository);
+		gitImpl.registerGitProvider(mockGitProvider);
+
+		telemetry = new MockTelemetry();
+		credentialStore = new CredentialStore(telemetry, createFakeSecretStorage(), gitImpl);
 
 		provider = new PullRequestsTreeDataProvider(telemetry);
 		fileReviewedStatusService = sinon.createStubInstance(FileReviewedStatusService);
-		manager = new FolderRepositoryManager(repository, telemetry, new GitApiImpl(), credentialStore, fileReviewedStatusService);
+		manager = new FolderRepositoryManager(repository, telemetry, gitImpl, credentialStore, fileReviewedStatusService);
 		sinon.stub(credentialStore, 'isAuthenticated').returns(false);
 		await manager.updateRepositories();
 
@@ -196,7 +202,7 @@ describe('ReviewCommentController', function () {
 			// 	status: CommentThreadStatus.Active,
 			// });
 
-			sinon.stub(activePullRequest.azdoRepository.azdo.connection, 'getGitApi').resolves({
+			sinon.stub(activePullRequest.azdoRepository.azdo!.connection, 'getGitApi').resolves({
 				createThread: async (c,r,n,p) => {
 					return {
 						id: 1,

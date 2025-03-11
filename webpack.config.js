@@ -12,7 +12,7 @@
 
 const execFile = require('child_process').execFile;
 const path = require('path');
-const { ESBuildMinifyPlugin } = require('esbuild-loader');
+const { EsbuildPlugin } = require('esbuild-loader');
 const ForkTsCheckerPlugin = require('fork-ts-checker-webpack-plugin');
 const JSON5 = require('json5');
 const TerserPlugin = require('terser-webpack-plugin');
@@ -80,7 +80,7 @@ async function getWebviewConfig(mode, env, entry) {
 			minimizer: [
 				// @ts-ignore
 				env.esbuild
-					? new ESBuildMinifyPlugin({
+					? new EsbuildPlugin({
 							format: 'cjs',
 							minify: true,
 							treeShaking: true,
@@ -207,7 +207,7 @@ async function getExtensionConfig(target, mode, env) {
 			minimizer: [
 				// @ts-ignore
 				env.esbuild
-					? new ESBuildMinifyPlugin({
+					? new EsbuildPlugin({
 							format: 'cjs',
 							minify: true,
 							treeShaking: true,
@@ -237,7 +237,7 @@ async function getExtensionConfig(target, mode, env) {
 						? {
 								loader: 'esbuild-loader',
 								options: {
-									loader: 'ts',
+									loader: 'tsx',
 									target: 'es2019',
 									tsconfigRaw: await resolveTSConfig(
 										path.join(

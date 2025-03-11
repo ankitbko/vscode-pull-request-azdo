@@ -23,10 +23,11 @@ import * as PersistentState from './common/persistentState';
 import { Resource } from './common/resources';
 import { handler as uriHandler } from './common/uri';
 import { onceEvent } from './common/utils';
-import { EXTENSION_ID, SETTINGS_NAMESPACE } from './constants';
+import { EXTENSION_ID, SETTINGS_NAMESPACE, URI_SCHEME_PR } from './constants';
 import { registerBuiltinGitProvider, registerLiveShareGitProvider } from './gitProviders/api';
 import { MockGitProvider } from './gitProviders/mockGitProvider';
 import { FileTypeDecorationProvider } from './view/fileTypeDecorationProvider';
+import { getInMemPRContentProvider } from './view/inMemPRContentProvider';
 import { PullRequestChangesTreeDataProvider } from './view/prChangesTreeDataProvider';
 import { PullRequestsTreeDataProvider } from './view/prsTreeDataProvider';
 import { ReviewManager } from './view/reviewManager';
@@ -192,20 +193,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 	telemetry = new TelemetryReporter(EXTENSION_ID, version, aiKey);
 	context.subscriptions.push(telemetry);
 
+	PersistentState.init(context);
+
 	// const session = await registerGithubExtension();
 
-	PersistentState.init(context);
-	const credentialStore = new CredentialStore(telemetry, context.secrets);
-	context.subscriptions.push(credentialStore);
-	await credentialStore.initialize();
-
-	const builtInGitProvider = await registerBuiltinGitProvider(credentialStore, apiImpl);
+	const builtInGitProvider = await registerBuiltinGitProvider(apiImpl);
 	if (builtInGitProvider) {
 		context.subscriptions.push(builtInGitProvider);
 	} else {
 		const mockGitProvider = new MockGitProvider();
 		context.subscriptions.push(apiImpl.registerGitProvider(mockGitProvider));
 	}
+
+	const credentialStore = new CredentialStore(telemetry, context.secrets, apiImpl);
+	context.subscriptions.push(credentialStore);
+	await credentialStore.initialize();
 
 	const liveshareGitProvider = registerLiveShareGitProvider(apiImpl);
 	context.subscriptions.push(liveshareGitProvider);
@@ -217,6 +219,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitApi
 
 	const prTree = new PullRequestsTreeDataProvider(telemetry);
 	context.subscriptions.push(prTree);
+
+	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(URI_SCHEME_PR, getInMemPRContentProvider()));
 
 	if (apiImpl.repositories.length > 0) {
 		await init(context, apiImpl, credentialStore, apiImpl.repositories, prTree, liveshareApiPromise);

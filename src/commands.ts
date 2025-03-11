@@ -7,27 +7,30 @@
 import * as pathLib from 'path';
 import { GitPullRequestCommentThread } from 'azure-devops-node-api/interfaces/GitInterfaces';
 import * as vscode from 'vscode';
+import { Repository } from './api/api';
 import { GitErrorCodes } from './api/api1';
 import { CredentialStore } from './azdo/credentials';
 import { FolderRepositoryManager } from './azdo/folderRepositoryManager';
-import { PullRequest } from './azdo/interface';
+import { IFileChangeNodeWithUri, IRawFileChange, PullRequest } from './azdo/interface';
 import { GHPRComment, GHPRCommentThread, TemporaryComment } from './azdo/prComment';
 import { PullRequestModel } from './azdo/pullRequestModel';
 import { PullRequestOverviewPanel } from './azdo/pullRequestOverview';
 import { RepositoriesManager } from './azdo/repositoriesManager';
 import { AzdoUserManager } from './azdo/userManager';
-import { getPositionFromThread } from './azdo/utils';
+import { convertRawFileChangeToFileChangeNode, getPositionFromThread, removeLeadingSlash } from './azdo/utils';
 import { AzdoWorkItem } from './azdo/workItem';
 import { CommentReply, resolveCommentHandler } from './commentHandlerResolver';
 import { DiffChangeType } from './common/diffHunk';
 import { getZeroBased } from './common/diffPositionMapping';
-import { GitChangeType } from './common/file';
+import { GitChangeType, InMemFileChange } from './common/file';
 import Logger from './common/logger';
 import { ITelemetry } from './common/telemetry';
-import { asImageDataURI, fromReviewUri, ReviewUriParams } from './common/uri';
+import { asImageDataURI, fromPRUri, fromReviewUri, ReviewUriParams, toPRUriAzdo } from './common/uri';
 import { formatError } from './common/utils';
-import { SETTINGS_NAMESPACE } from './constants';
+import { SETTINGS_NAMESPACE, URI_SCHEME_PR, URI_SCHEME_REVIEW } from './constants';
+import { getInMemPRContentProvider, provideDocumentContentForChangeModel } from './view/inMemPRContentProvider';
 import { PullRequestsTreeDataProvider } from './view/prsTreeDataProvider';
+import { PullRequestCommentingRangeProvider } from './view/pullRequestCommentingRangeProvider';
 import { ReviewManager } from './view/reviewManager';
 import { CommitNode } from './view/treeNodes/commitNode';
 import { DescriptionNode } from './view/treeNodes/descriptionNode';
@@ -731,7 +734,7 @@ export function registerCommands(
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('pr.markFileAsViewed', async (treeNode: GitFileChangeNode) => {
+		vscode.commands.registerCommand('azdopr.markFileAsViewed', async (treeNode: GitFileChangeNode) => {
 			try {
 				await treeNode.pullRequest.markFileAsViewed(treeNode.sha);
 			} catch (e) {
@@ -741,12 +744,33 @@ export function registerCommands(
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('pr.unmarkFileAsViewed', async (treeNode: GitFileChangeNode) => {
+		vscode.commands.registerCommand('azdopr.unmarkFileAsViewed', async (treeNode: GitFileChangeNode) => {
 			try {
 				await treeNode.pullRequest.unmarkFileAsViewed(treeNode.sha);
 			} catch (e) {
 				vscode.window.showErrorMessage(`Marked file as not viewed failed: ${e}`);
 			}
 		}),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('azdopr.applySuggestionWithCopilot', async (commentThread: GHPRCommentThread) => {
+			/* __GDPR__
+				"pr.applySuggestionWithCopilot" : {}
+			*/
+			telemetry.sendTelemetryEvent('azdopr.applySuggestionWithCopilot');
+
+			commentThread.collapsibleState = vscode.CommentThreadCollapsibleState.Collapsed;
+			const messages = commentThread.comments.map(comment => {
+				const body = comment.body instanceof vscode.MarkdownString ? comment.body.value : comment.body;
+				return `- ${comment.author.name}: ${body}`;
+			}).join('\n');
+
+			await vscode.commands.executeCommand('vscode.editorChat.start', {
+				initialRange: commentThread.range,
+				message: messages,
+				autoSend: true,
+			});
+		})
 	);
 }

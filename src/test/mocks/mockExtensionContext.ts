@@ -47,7 +47,7 @@ export class MockExtensionContext implements ExtensionContext {
 }
 
 export const createFakeSecretStorage = (): SecretStorage => {
-	const secretStorage = <SecretStorage>{};
+	const secretStorage = {} as SecretStorage;
 
 	secretStorage.get = sinon.stub().returns(process.env.VSCODE_PR_AZDO_TEST_PAT);
 	secretStorage.store = sinon.stub();

@@ -5,7 +5,12 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { fromPRUri } from '../common/uri';
+import { FolderRepositoryManager } from '../azdo/folderRepositoryManager';
+import { IFileChangeNode } from '../azdo/interface';
+import { PullRequestModel } from '../azdo/pullRequestModel';
+import { GitChangeType } from '../common/file';
+import Logger from '../common/logger';
+import { fromPRUri, PRUriParams } from '../common/uri';
 
 export class InMemPRContentProvider implements vscode.TextDocumentContentProvider {
 	private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
@@ -49,4 +54,72 @@ const inMemPRContentProvider = new InMemPRContentProvider();
 
 export function getInMemPRContentProvider(): InMemPRContentProvider {
 	return inMemPRContentProvider;
+}
+
+export async function provideDocumentContentForChangeModel(params: PRUriParams, pullRequestModel: PullRequestModel, folderReposManager: FolderRepositoryManager, fileChange: IFileChangeNode, isFileRemote: boolean): Promise<string> {
+	if (
+		(params.isBase && fileChange.status === GitChangeType.ADD) ||
+		(!params.isBase && fileChange.status === GitChangeType.DELETE)
+	) {
+		return '';
+	}
+
+	if (isFileRemote) {
+		try {
+			const sha = params.isBase ? fileChange.previousFileSha : fileChange.sha ?? fileChange.sha;
+			Logger.appendLine(`PR> Fetching file content from AzDO: ${sha}`);
+			const content = await pullRequestModel.getFile(sha);
+			Logger.debug(`PR> Fetched file content from AzDO: ${sha}, content: ${content}`, 'InMemPRContentProvider');
+			return content;
+		} catch (e) {
+			Logger.appendLine(`PR> Fetching file content failed: ${e}`);
+			vscode.window
+				.showWarningMessage(
+					'Opening this file locally failed. Would you like to view it on AzDO?',
+					'Open in AzDO',
+				)
+				.then(result => {
+					if (result === 'Open in AzDO') {
+						vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(fileChange.blobUrl));
+					}
+				});
+			return '';
+		}
+	} else {
+		if (fileChange.status === GitChangeType.ADD) {
+			const originalFileName = fileChange.fileName;
+			const originalFilePath = vscode.Uri.joinPath(folderReposManager.repository.rootUri, originalFileName!);
+			const commit = params.headCommit;
+			const originalContent = await folderReposManager.repository.show(commit, originalFilePath.fsPath);
+			return originalContent;
+		} else if (fileChange.status === GitChangeType.RENAME) {
+			let commit = params.baseCommit;
+			let originalFileName = fileChange.previousFileName;
+			if (!params.isBase) {
+				commit = params.headCommit;
+				originalFileName = fileChange.fileName;
+			}
+
+			const originalFilePath = vscode.Uri.joinPath(folderReposManager.repository.rootUri, originalFileName!);
+			const originalContent = await folderReposManager.repository.show(commit, originalFilePath.fsPath);
+			return originalContent;
+		} else {
+			const originalFileName =
+				fileChange.status === GitChangeType.DELETE ? fileChange.previousFileName : fileChange.fileName;
+			const originalFilePath = vscode.Uri.joinPath(folderReposManager.repository.rootUri, originalFileName!);
+			let commit = params.baseCommit;
+			if (!params.isBase) {
+				commit = params.headCommit;
+			}
+			const originalContent = await folderReposManager.repository.show(commit, originalFilePath.fsPath);
+			return originalContent;
+			// if (params.isBase) {
+			// 	return originalContent;
+			// } else {
+			// 	return getModifiedContentFromDiffHunkAzdo(originalContent, fileChange.diffHunks);
+			// }
+		}
+	}
+
+	return '';
 }

@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { APIState, GitAPI, GitExtension, PublishEvent } from '../@types/git';
+import { APIState, PublishEvent } from '../@types/git';
 import { IGit, Repository } from '../api/api';
 import { MockRepository } from './mockRepository';
 
 export class MockGitProvider implements IGit, vscode.Disposable {
-	private _mockRepository: MockRepository;
+	private _mockRepository: Repository;
 	get repositories(): Repository[] {
 		return [this._mockRepository];
 	}
@@ -29,10 +29,12 @@ export class MockGitProvider implements IGit, vscode.Disposable {
 
 	private _disposables: vscode.Disposable[];
 
-	public constructor() {
+	public constructor(repository?: Repository) {
 		this._disposables = [];
-		this._mockRepository = new MockRepository();
-		this._mockRepository.addRemote('origin', 'https://anksinha@dev.azure.com/anksinha/test/_git/test');
+		this._mockRepository = repository ?? new MockRepository();
+		if (!repository) {
+			this._mockRepository.addRemote('origin', 'https://anksinha@dev.azure.com/anksinha/test/_git/test');
+		}
 		this._onDidCloseRepository.fire(this._mockRepository);
 		this._onDidOpenRepository.fire(this._mockRepository);
 	}

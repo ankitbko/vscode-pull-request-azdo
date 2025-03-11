@@ -303,68 +303,67 @@ export async function parseDiffAzdo(
 	repository: Repository,
 	parentCommit: string,
 ): Promise<(InMemFileChange | SlimFileChange)[]> {
-	const fileChanges: (InMemFileChange | SlimFileChange)[] = [];
+	const fileChanges: (InMemFileChange | SlimFileChange)[] = await Promise.all(reviews.map(r => parseSingleDiffAzdo(r, repository, parentCommit)));
+	return fileChanges;
+}
 
-	for (let i = 0; i < reviews.length; i++) {
-		const review = reviews[i];
-		const gitChangeType = getGitChangeTypeFromVersionControlChangeType(review.status);
+export async function parseSingleDiffAzdo(
+	review: IAzdoRawFileChange,
+	repository: Repository,
+	parentCommit: string,
+): Promise<(InMemFileChange | SlimFileChange)> {
+	const gitChangeType = getGitChangeTypeFromVersionControlChangeType(review.status);
 
-		if (review.diffHunk === undefined) {
-			fileChanges.push(
-				new SlimFileChange(
-					parentCommit,
-					review.blob_url,
-					gitChangeType,
-					review.filename,
-					review.previous_filename,
-					review.file_sha,
-					review.previous_file_sha,
-				),
-			);
-			continue;
-		}
-
-		let originalFileExist = false;
-
-		switch (gitChangeType) {
-			case GitChangeType.MODIFY:
-				try {
-					await repository.getObjectDetails(parentCommit, removeLeadingSlash(review.filename));
-					originalFileExist = true;
-				} catch (err) {
-					/* noop */
-				}
-				break;
-			case GitChangeType.RENAME:
-			case GitChangeType.DELETE:
-				try {
-					await repository.getObjectDetails(parentCommit, removeLeadingSlash(review.previous_filename!));
-					originalFileExist = true;
-				} catch (err) {
-					/* noop */
-				}
-				break;
-		}
-
-		const diffHunks = review.diffHunk ?? [];
-		const isPartial = !originalFileExist && gitChangeType !== GitChangeType.ADD;
-		fileChanges.push(
-			new InMemFileChange(
-				parentCommit,
-				gitChangeType,
-				review.filename,
-				review.previous_filename,
-				'review.patch',
-				diffHunks,
-				isPartial,
-				review.blob_url,
-				review.file_sha,
-				review.previous_file_sha,
-			),
+	if (review.diffHunks === undefined) {
+		return new SlimFileChange(
+			parentCommit,
+			review.headCommit,
+			review.blob_url,
+			gitChangeType,
+			review.filename,
+			review.previous_filename,
+			review.file_sha,
+			review.previous_file_sha,
 		);
 	}
 
-	return fileChanges;
+	let originalFileExist = false;
+
+	switch (gitChangeType) {
+		case GitChangeType.MODIFY:
+			try {
+				await repository.getObjectDetails(parentCommit, removeLeadingSlash(review.filename));
+				originalFileExist = true;
+			} catch (err) {
+				/* noop */
+			}
+			break;
+		case GitChangeType.RENAME:
+		case GitChangeType.DELETE:
+			try {
+				await repository.getObjectDetails(parentCommit, removeLeadingSlash(review.previous_filename!));
+				originalFileExist = true;
+			} catch (err) {
+				/* noop */
+			}
+			break;
+	}
+
+	const diffHunks = review.diffHunks ?? [];
+	const isPartial = !originalFileExist && gitChangeType !== GitChangeType.ADD;
+	return new InMemFileChange(
+		parentCommit,
+		review.headCommit,
+		gitChangeType,
+		review.filename,
+		review.previous_filename,
+		'review.patch',
+		diffHunks,
+		isPartial,
+		review.blob_url,
+		review.file_sha,
+		review.previous_file_sha,
+	);
 }
 
 export function getGitChangeTypeFromVersionControlChangeType(status: VersionControlChangeType): GitChangeType {

@@ -63,6 +63,7 @@ export class CommitNode extends TreeNode implements vscode.TreeItem {
 				this.pullRequest,
 				getGitChangeTypeFromVersionControlChangeType(change.changeType!),
 				fileName,
+				parentFileName,
 				undefined,
 				toReviewUri(
 					uri,
@@ -86,6 +87,7 @@ export class CommitNode extends TreeNode implements vscode.TreeItem {
 				[], //matchingComments,
 				'',
 				this.commit.commitId,
+
 			);
 
 			fileChangeNode.command = {

@@ -7,9 +7,8 @@ import * as vscode from 'vscode';
 import { REMOTES_SETTING, ReposManagerState } from '../azdo/folderRepositoryManager';
 import { RepositoriesManager } from '../azdo/repositoriesManager';
 import { ITelemetry } from '../common/telemetry';
-import { SETTINGS_NAMESPACE, URI_SCHEME_PR } from '../constants';
+import { SETTINGS_NAMESPACE } from '../constants';
 import { FileViewedDecorationProvider } from './fileViewedDecorationProvider';
-import { getInMemPRContentProvider } from './inMemPRContentProvider';
 import { DecorationProvider } from './treeDecorationProvider';
 import { CategoryTreeNode, PRCategoryActionNode, PRCategoryActionType } from './treeNodes/categoryNode';
 import { BaseTreeNode, TreeNode } from './treeNodes/treeNode';
@@ -34,9 +33,6 @@ export class PullRequestsTreeDataProvider implements vscode.TreeDataProvider<Tre
 
 	constructor(private _telemetry: ITelemetry) {
 		this._disposables = [];
-		this._disposables.push(
-			vscode.workspace.registerTextDocumentContentProvider(URI_SCHEME_PR, getInMemPRContentProvider()),
-		);
 		this._disposables.push(vscode.window.registerFileDecorationProvider(DecorationProvider));
 		this._disposables.push(vscode.window.registerFileDecorationProvider(FileViewedDecorationProvider));
 		this._disposables.push(
