@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.0
+- Autodetect Azure DevOps URL and project name from remote.
+- Fixing a lot of bugs and preparation for AI integration.
+
 ## 0.2.3
 - Fixed [#86](https://github.com/ankitbko/vscode-pull-request-azdo/issues/86) thanks to [danigt91](https://github.com/danigt91)
 

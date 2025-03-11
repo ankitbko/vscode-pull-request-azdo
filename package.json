@@ -12,10 +12,10 @@
 	},
 	"enableProposedApi": false,
 	"preview": true,
-	"version": "0.2.3",
+	"version": "1.0.0",
 	"publisher": "ankitbko",
 	"engines": {
-		"vscode": "^1.79.0"
+		"vscode": "^1.97.0"
 	},
 	"categories": [
 		"Other"

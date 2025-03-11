@@ -27,7 +27,7 @@ It's easy to get started with Azure Devops Pull Requests for Visual Studio Code.
 1. Make sure you have VSCode version 1.52.0 or higher.
 1. Reload VS Code after the installation (click the reload button next to the extension).
 1. Open your desired Azure Devops repository.
-1. You will need to configure the `azdoPullRequests.projectName` and `azdoPullRequests.orgUrl` setting. You can configure it in workspace settings and commit it so others in your team wouldn't need to do this configuration again. (Look at the next section to understand the format of these settings).
+1. (Optional) Extension will autodetect the AzDO URL from git remote. In case it fails, you can configure the `azdoPullRequests.projectName` and `azdoPullRequests.orgUrl` setting. You can configure it in workspace settings and commit it so others in your team wouldn't need to do this configuration again. (Look at the next section to understand the format of these settings).
 1. Signin to VS Code using same Microsoft account that you use to signin to Azure Devops. Authentication will work automatically. **PAT token is no longer required**.
 1. You should be good to go!
 
