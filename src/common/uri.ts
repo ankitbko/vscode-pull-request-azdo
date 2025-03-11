@@ -174,7 +174,7 @@ class UriEventHandler extends EventEmitter<Uri> implements UriHandler {
 export const handler = new UriEventHandler();
 
 export function createPRUris(pr: AzdoPullRequestModel, folderManager: FolderRepositoryManager, fileChange: IRawFileChange) {
-	let headUri, baseUri: Uri;
+	let headUri: Uri, baseUri: Uri;
 	const headCommit = pr.head!.sha;
 	const fileName = fileChange.status === VersionControlChangeType.Delete ? fileChange.previous_filename! : fileChange.filename;
 	const parentFileName = fileChange.previous_filename ?? '';
