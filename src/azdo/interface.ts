@@ -154,6 +154,8 @@ export interface IRawFileChange {
 	blob_url: string;
 	patch?: string;
 	diffHunks?: DiffHunk[];
+	baseCommit: string;
+	headCommit: string;
 }
 
 

@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { IRawFileChange } from '../azdo/interface';
 import { DiffHunk } from './diffHunk';
 
 export enum GitChangeType {
@@ -19,6 +20,7 @@ export enum GitChangeType {
 export class InMemFileChange {
 	constructor(
 		public readonly baseCommit: string,
+		public readonly headCommit: string,
 		public readonly status: GitChangeType,
 		public readonly fileName: string,
 		public readonly previousFileName: string | undefined,
@@ -35,6 +37,7 @@ export class InMemFileChange {
 export class SlimFileChange {
 	constructor(
 		public readonly baseCommit: string,
+		public readonly headCommit: string,
 		public readonly blobUrl: string,
 		public readonly status: GitChangeType,
 		public readonly fileName: string,
