@@ -266,6 +266,7 @@ export class PRNode extends TreeNode {
 						change.status,
 					),
 					sha,
+					change.previousFileSHA
 				);
 			}
 
@@ -303,6 +304,7 @@ export class PRNode extends TreeNode {
 				change.diffHunks,
 				comments.filter(comment => comment.threadContext?.filePath === fileName && !!getPositionFromThread(comment)),
 				sha,
+				change.previousFileSHA
 			);
 
 			return changedItem;
@@ -357,7 +359,8 @@ export class PRNode extends TreeNode {
 
 		const isFileRemote = fileChange instanceof RemoteFileChangeNode || fileChange.isPartial;
 
-		return provideDocumentContentForChangeModel(params, this.pullRequestModel, this._folderReposManager, fileChange as IFileChangeNode, isFileRemote);
+		const content = await provideDocumentContentForChangeModel(params, this.pullRequestModel, this._folderReposManager, fileChange as IFileChangeNode, isFileRemote);
+		return content;
 	}
 
 	// #endregion

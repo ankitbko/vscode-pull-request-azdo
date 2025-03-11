@@ -40,6 +40,7 @@ export class RemoteFileChangeNode extends TreeNode implements vscode.TreeItem {
 		public readonly filePath: vscode.Uri,
 		public readonly parentFilePath: vscode.Uri,
 		public readonly sha?: string,
+		public readonly previousFileSha?: string | undefined,
 	) {
 		super();
 		const viewed = this.pullRequest.fileChangeViewedState[sha] ?? ViewedState.UNVIEWED;
@@ -112,6 +113,7 @@ export class FileChangeNode extends TreeNode implements vscode.TreeItem {
 		public readonly diffHunks: DiffHunk[],
 		public comments: GitPullRequestCommentThread[],
 		public readonly sha?: string,
+		public readonly previousFileSha?: string | undefined,
 	) {
 		super();
 		const viewed = this.pullRequest.fileChangeViewedState[sha] ?? ViewedState.UNVIEWED;
@@ -235,8 +237,9 @@ export class InMemFileChangeNode extends FileChangeNode implements vscode.TreeIt
 		public readonly diffHunks: DiffHunk[],
 		public comments: GitPullRequestCommentThread[],
 		public readonly sha?: string,
+		public readonly previousFileSha?: string | undefined,
 	) {
-		super(parent, pullRequest, status, fileName, blobUrl, filePath, parentFilePath, diffHunks, comments, sha);
+		super(parent, pullRequest, status, fileName, blobUrl, filePath, parentFilePath, diffHunks, comments, sha, previousFileSha);
 		this.command = {
 			title: 'show diff',
 			command: 'azdopr.openDiffView',
@@ -262,8 +265,9 @@ export class GitFileChangeNode extends FileChangeNode implements vscode.TreeItem
 		public comments: GitPullRequestCommentThread[] = [],
 		public readonly sha?: string, // For GitFileChangeNode this is commit id
 		public readonly commitId?: string,
+		public readonly previousFileSha?: string | undefined,
 	) {
-		super(parent, pullRequest, status, fileName, blobUrl, filePath, parentFilePath, diffHunks, comments, sha);
+		super(parent, pullRequest, status, fileName, blobUrl, filePath, parentFilePath, diffHunks, comments, sha, previousFileSha);
 		this.command = {
 			title: 'open changed file',
 			command: 'azdopr.openChangedFile',

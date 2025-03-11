@@ -87,6 +87,7 @@ export class CommitNode extends TreeNode implements vscode.TreeItem {
 				[], //matchingComments,
 				'',
 				this.commit.commitId,
+
 			);
 
 			fileChangeNode.command = {

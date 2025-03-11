@@ -448,6 +448,7 @@ export class ReviewManager {
 				activeComments.filter(comment => comment.threadContext?.filePath === fileName),
 				change.status === GitChangeType.DELETE ? change.previousFileSHA : change.fileSHA,
 				headSha,
+				change.previousFileSHA
 			);
 			nodes.push(changedItem);
 		}

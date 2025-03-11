@@ -164,6 +164,7 @@ export interface IFileChangeNode {
 	fileName: string;
 	previousFileName: string;
 	diffHunks?: DiffHunk[];
+	previousFileSha?: string;
 }
 
 export interface IFileChangeNodeWithUri extends IFileChangeNode {

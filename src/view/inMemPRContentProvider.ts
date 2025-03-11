@@ -66,7 +66,11 @@ export async function provideDocumentContentForChangeModel(params: PRUriParams, 
 
 	if (isFileRemote) {
 		try {
-			return pullRequestModel.getFile(fileChange.sha!);
+			const sha = params.isBase ? fileChange.previousFileSha : fileChange.sha ?? fileChange.sha;
+			Logger.appendLine(`PR> Fetching file content from AzDO: ${sha}`);
+			const content = await pullRequestModel.getFile(sha);
+			Logger.debug(`PR> Fetched file content from AzDO: ${sha}, content: ${content}`, 'InMemPRContentProvider');
+			return content;
 		} catch (e) {
 			Logger.appendLine(`PR> Fetching file content failed: ${e}`);
 			vscode.window

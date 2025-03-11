@@ -426,5 +426,6 @@ export function convertRawFileChangeToFileChangeNode(fileChange: IRawFileChange)
 		previousFileName: fileChange.previous_filename,
 		sha: fileChange.file_sha,
 		diffHunks: fileChange.diffHunks,
+		previousFileSha: fileChange.previous_file_sha
 	};
 }
