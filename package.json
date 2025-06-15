@@ -2,7 +2,7 @@
 	"name": "vscode-pull-request-azdo",
 	"displayName": "Azure Devops Pull Requests",
 	"description": "Pull Request Provider for Azure Devops",
-	"icon": "resources/icons/azdo_logo.png",
+	"icon": "",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/ankitbko/vscode-pull-request-azdo"
@@ -12,7 +12,7 @@
 	},
 	"enableProposedApi": false,
 	"preview": true,
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"publisher": "ankitbko",
 	"engines": {
 		"vscode": "^1.97.0"
